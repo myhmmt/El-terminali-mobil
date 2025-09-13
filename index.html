@@ -248,7 +248,6 @@
         const bc=cols[0].replace(/\s+/g,'');
         const name=cols[1];
         let price=(cols[2]||'').replace(/\s/g,'');
-        // normalizasyon
         price=normPriceStr(price).disp;
         if(/^[0-9]{8,14}$/.test(bc)) map[bc]={name,price};
       }
@@ -256,7 +255,7 @@
     return map;
   }
 
-  // --- Fiyat normalizasyonu yardımcıları ---
+  // --- Fiyat normalizasyonu ---
   function normPriceStr(p){
     if(!p) return {num:0,disp:''};
     p = p.replace(/\./g,'');            // binlik noktaları sil
@@ -267,7 +266,7 @@
     return {num:n,disp: n? n.toFixed(2).replace('.',',') : ''};
   }
 
-  // GDF: 01 (PLU+İsim), 02 (Barkod+Fiyat). Fiyat seçimi: bulunan fiyatların en küçüğü (>0).
+  // GDF: 01 (PLU+İsim), 02 (Barkod+Fiyat)
   function parseGDF(txt){
     const lines=txt.split(/\r?\n/);
     const names={}; let lastPLU=null; const map={};
@@ -279,15 +278,14 @@
         const parts=raw.trim().split(/\s{2,}/);
         if(parts.length>=4){ lastPLU=parts[1]; names[lastPLU]=parts[3]; }
       }else if(raw.startsWith('02')){
-        // fiyat adaylarını topla ve normalize et
         const matches=raw.match(priceRe)||[];
         const candNums=[];
         for(let s of matches){
-          // bazı ERP'ler 0011,90 gibi yazıyor
+          // SAHTE uzun değerleri ele: 100311,90 gibi (virgül hariç rakam uzunluğu > 6 ise at)
+          if(s.replace(/[^\d]/g,'').length > 6) continue;
           const {num}=normPriceStr(s);
           if(num>0) candNums.push(num);
         }
-        // en küçük pozitif fiyatı seç
         let priceDisp='';
         if(candNums.length){
           const min=Math.min(...candNums);
@@ -320,14 +318,14 @@
   document.getElementById('btnCSV').onclick=()=>exportCSV();
   document.getElementById('btnClear').onclick=()=>{if(confirm('Listeyi temizlemek istiyor musun?')){state.items={};save();render();}};
   document.getElementById('btnUndo').onclick=()=>undo();
-  productFile.onchange=async(e)=>{const f=e.target.files?.[0];if(!f)return;loadProductText(await f.text(),f.name||'dosya');};
 
   barcodeInp.addEventListener('input',()=>{const code=barcodeInp.value.replace(/\D/g,'');if(code.length>=8)showProductInfo(code);});
   barcodeInp.addEventListener('blur',()=>{const code=barcodeInp.value.replace(/\D/g,'');if(code)showProductInfo(code);});
   btnScanOnce.onclick=async()=>{await listCameras();state.singleShot=true;btnScanOnce.disabled=true;btnScanOnce.textContent='Okutuluyor...';if(!state.scanning)await start();else statusEl.textContent='Tek seferlik okuma aktif';};
 
-  load();listCameras();
+  // localStorage'dan ürün haritasını çek
   try{const pm=localStorage.getItem('productMap');if(pm){productMap=JSON.parse(pm);mapStat.textContent=Object.keys(productMap).length+' ürün yüklü';}}catch{}
+  load();listCameras();
 </script>
 </body>
 </html>
