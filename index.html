@@ -327,9 +327,16 @@
           // --- fiyat: en sağdaki ---
           const allPrices = L.match(priceRe) || [];
           let price = allPrices.length ? allPrices[allPrices.length-1] : '';
-          price = price.replace(/\./g,'');           // binlik noktaları temizle
-          if (/^100\d+,\d{2}$/.test(price)) price = price.slice(3);  // 100-prefiksini at
-          if (!/^0,\d{2}$/.test(price)) price = price.replace(/^0+(?=\d)/,''); // baştaki sıfırlar
+
+          // binlik noktaları temizle
+          price = price.replace(/\./g,'');
+
+          // önek düzeltmeleri: 1001xxxx,yy -> xxxx,yy  |  100xxxx,yy -> xxxx,yy
+          if (/^1001\d+,\d{2}$/.test(price))      price = price.slice(4);
+          else if (/^100\d+,\d{2}$/.test(price))  price = price.slice(3);
+
+          // baştaki gereksiz sıfırlar (0,99 hariç)
+          if (!/^0,\d{2}$/.test(price)) price = price.replace(/^0+(?=\d)/,'');
 
           // --- barkod ---
           const nums = L.match(/\b\d{12,14}\b/g) || [];
