@@ -6,7 +6,7 @@
   <title>Genç Gross Mobil Terminal — Barkod + Adet → TXT</title>
   <style>
     :root{
-      /* logo renkleri */
+      /* Logo renkleri */
       --blue:#1C2AAE;
       --orange:#F0552C;
       --bg:#fff; --card:#f6f8ff; --text:#102050; --muted:#667;
@@ -107,7 +107,7 @@
     <!-- ÜRÜN VERİSİ -->
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle (opsiyonel)</h3>
-      <div class="muted">GDF/TXT (ERP çıktın) veya CSV/JSON yükleyebilirsin. CSV: <code>barkod;isim;fiyat</code></div>
+      <div class="muted">GDF/TXT (ERP çıktın) veya CSV/JSON yükleyebilirsin. CSV formatı: <code>barkod;isim;fiyat</code></div>
       <div class="row">
         <input id="productFile" type="file" accept=".gdf,.txt,.csv,.json" />
         <button id="btnClearMap">Ürün Verisini Temizle</button>
@@ -261,38 +261,55 @@
       tick();
     }
 
-    // ==== ÜRÜN VERİSİ YÜKLE ====
+    // ==== ÜRÜN VERİSİ YÜKLE (teşhisli) ====
     document.getElementById('btnClearMap').onclick = ()=>{ productMap={}; localStorage.removeItem('productMap'); mapStat.textContent='0 ürün yüklü'; showProductInfo(''); };
     productFile.onchange = async (e)=>{
       const file = e.target.files?.[0]; if(!file) return;
-      const txt = await file.text();
-      const ext = (file.name.split('.').pop()||'').toLowerCase();
+      const name = file.name || '';
+      let txt = '';
+      try { txt = await file.text(); } catch { alert('Dosya okunamadı.'); return; }
+
+      const ext = (name.split('.').pop()||'').toLowerCase();
+
       try{
-        if(txt.startsWith('<SIGNATURE=GNDPLU.GDF>')){
+        if (txt.startsWith('<SIGNATURE=GNDPLU.GDF>')){
           productMap = parseGDF(txt);
-        }else if(ext==='json'){
+        } else if (ext === 'json'){
           const obj = JSON.parse(txt);
           productMap = {};
           for(const [k,v] of Object.entries(obj)){
             if(typeof v === 'string') productMap[k] = {name:v, price:''};
             else productMap[k] = {name:v.name||'', price:v.price||''};
           }
-        }else{ // csv / txt
+        } else { // CSV / TXT
           productMap = parseCSV(txt);
         }
+
+        const count = Object.keys(productMap).length;
+        if (count === 0){
+          const first = (txt.split(/\r?\n/)[0]||'').slice(0,120);
+          let reason = 'Dosyada uygun ayraç (;) veya virgül (,) yok ya da düz metin değil.';
+          if (!ext) reason = 'Dosyanın uzantısı yok/uyumsuz (XLSX/PDF olabilir). Lütfen CSV/TXT olarak kaydedin.';
+          else if (/(xlsx|xls|pdf)$/i.test(ext)) reason = 'Bu bir Excel/PDF dosyası. Lütfen CSV olarak dışa aktarın.';
+          alert(
+            `0 ürün bulundu.\n\nDosya: ${name}\nİlk satır: "${first}"\n\nOlası neden: ${reason}\n\n` +
+            `Örnek satır:\n8697449113051;Örnek Ürün;259,90`
+          );
+        }
+
         localStorage.setItem('productMap', JSON.stringify(productMap));
-        mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü';
-        alert('Ürün verisi yüklendi');
+        mapStat.textContent = count + ' ürün yüklü';
+        showProductInfo(barcodeInp.value.trim());
       }catch(err){
         console.error(err);
-        alert('Dosya okunamadı. Lütfen GDF/CSV/JSON formatında deneyin.');
+        alert('Dosya çözümlenemedi. Lütfen CSV/TXT (barkod;isim;fiyat) veya imzalı GDF yükleyin.');
       }
     };
 
+    // CSV/TXT: barkod;isim;fiyat  (ayraç ; veya ,)
     function parseCSV(txt){
-      // CSV/TXT: barkod;isim;fiyat  (ayraç ; veya ,)
       const lines = txt.split(/\r?\n/).filter(x=>x.trim().length);
-      const sep = lines[0].includes(';') ? ';' : ',';
+      const sep = lines[0]?.includes(';') ? ';' : ',';
       const map = {};
       for (const L of lines){
         const cols = L.split(sep).map(s=>s.trim());
@@ -314,8 +331,8 @@
       return map;
     }
 
+    // GDF: 01 (PLU+İsim), 02 (Barkod+Fiyatlar). Sağdaki gerçek satış fiyatı.
     function parseGDF(txt){
-      // 01 satırı: PLU + İSİM, 02 satırı: barkod + fiyat(lar). Sağdaki gerçek satış.
       const lines = txt.split(/\r?\n/);
       const names = {}; // plu -> name
       const map = {};
@@ -324,15 +341,16 @@
 
       for (const raw of lines){
         if(!raw) continue;
+
         if (raw.startsWith('01')){
           const parts = raw.trim().split(/\s{2,}/);
           if (parts.length>=4){ lastPLU = parts[1]; names[lastPLU] = parts[3]; }
-        } else if (raw.startsWith('02')){
-          // fiyat: sağdan ilk uygun değer
+        } 
+        else if (raw.startsWith('02')){
           const prices = raw.match(priceRe) || [];
           let price = prices.length ? prices[prices.length-1] : '';
           price = price.replace(/\./g,'');
-          // 1001xxxx,yy / 100xxxx,yy öneklerini at
+          // 1001xxxx,yy / 100xxxx,yy gibi önekleri temizle
           if (/^1001\d+,\d{2}$/.test(price)) price = price.slice(4);
           else if (/^100\d+,\d{2}$/.test(price)) price = price.slice(3);
           if (!/^0,\d{2}$/.test(price)) price = price.replace(/^0+(?=\d)/,'');
