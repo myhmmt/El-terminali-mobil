@@ -7,9 +7,7 @@
   <style>
     :root{
       --bg:#ffffff; --card:#f7f9fc; --text:#1a1a1a; --muted:#555;
-      --accent:#1C2AAE;   /* logo mavisi */
-      --accent2:#F0552C;  /* logo turuncusu */
-      --ok:#1fbf75; --warn:#ff5d5d;
+      --accent:#1C2AAE; --accent2:#F0552C; --ok:#1fbf75; --warn:#ff5d5d;
     }
     *{box-sizing:border-box}
     body{font-family:system-ui;margin:0;background:var(--bg);color:var(--text)}
@@ -19,7 +17,7 @@
     header .sub{margin:0;font-size:13px;opacity:.95}
     .wrap{max-width:880px;margin:auto}
     .card{margin:10px;padding:12px;background:var(--card);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.08)}
-    button{padding:10px 14px;margin:4px;border-radius:10px;border:none;cursor:pointer;font-weight:600}
+    button{padding:8px 12px;margin:4px;border-radius:10px;border:none;cursor:pointer;font-weight:600}
     .primary{background:var(--accent);color:#fff}
     .secondary{background:var(--accent2);color:#fff}
     .good{background:var(--accent2);color:#fff}
@@ -34,11 +32,10 @@
     .videoBox{position:relative;border-radius:12px;overflow:hidden;background:#000}
     video{display:block;width:100%;max-height:320px}
     .roi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-    .roi:after{content:""; width:68%; height:32%; border:2px solid rgba(255,255,255,.85); border-radius:10px;
-      box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
+    .roi:after{content:""; width:68%; height:32%; border:2px solid rgba(255,255,255,.85); border-radius:10px; box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
     .status{margin-top:6px}
     .chip{display:inline-block;background:#eee;color:#333;border:1px solid #ccc;padding:2px 8px;border-radius:999px;font-size:12px}
-    .qtybtn{padding:8px 10px;border:1px solid #ccd;background:#fff;border-radius:10px}
+    .qtybtn{padding:6px 10px;border:1px solid #ccd;background:#fff;border-radius:8px;cursor:pointer}
   </style>
 </head>
 <body>
@@ -50,7 +47,7 @@
   </header>
 
   <div class="wrap">
-    <!-- KAMERA KARTI -->
+    <!-- Kamera kartı -->
     <div class="card">
       <div class="row">
         <label>Kamera:</label>
@@ -58,15 +55,6 @@
         <button id="btnStart" class="primary">Kamerayı Başlat</button>
         <button id="btnStop">Durdur</button>
         <button id="btnScanOnce" class="secondary" style="margin-left:auto">👉 Okut (Tek Sefer)</button>
-      </div>
-
-      <div class="row">
-        <label style="display:inline-flex;gap:6px;align-items:center">
-          <input id="beepOn" type="checkbox" checked> Bip
-        </label>
-        <label style="display:inline-flex;gap:6px;align-items:center">
-          <input id="autoAdd" type="checkbox" checked> Otomatik +1 (okuyunca ekle)
-        </label>
       </div>
 
       <div class="videoBox">
@@ -78,19 +66,18 @@
         <span id="tech" class="chip">Motor: -</span>
         <span id="fps" class="chip">FPS: -</span>
       </div>
-      <div class="muted">İpucu: Barkodu ortadaki çerçeveye getirin. 15–25 cm, iyi ışık.</div>
     </div>
 
-    <!-- LİSTE KARTI -->
+    <!-- Liste kartı -->
     <div class="card">
       <label>Barkod & Adet</label>
       <div class="row">
         <input id="barcode" placeholder="Barkod" style="flex:1;min-width:220px" />
-        <button id="btnClearField" title="Barkod alanını temizle">Temizle</button>
+        <button id="btnClearField">Temizle</button>
 
         <button id="btnMinus" class="qtybtn">−1</button>
-        <input id="qty" type="number" value="1" min="1" style="width:80px;text-align:center" />
-        <button id="btnPlus"  class="qtybtn">+1</button>
+        <input id="qty" type="number" value="1" min="1" step="1" style="width:80px;text-align:center" />
+        <button id="btnPlus" class="qtybtn">+1</button>
 
         <button id="btnAdd" class="good">Ekle</button>
         <button id="btnUndo">Geri Al</button>
@@ -106,7 +93,7 @@
       </div>
 
       <table>
-        <thead><tr><th>Barkod</th><th class="right">Adet</th><th class="right">Hızlı</th><th></th></tr></thead>
+        <thead><tr><th>Barkod</th><th class="right">Adet</th><th></th></tr></thead>
         <tbody id="tbody"></tbody>
       </table>
       Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
@@ -115,13 +102,12 @@
     <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
   </div>
 
-  <!-- ZXing -->
   <script src="https://unpkg.com/@zxing/browser@0.1.6"></script>
   <script>
     const state = { items:{}, scanning:false, currentDeviceId:null, reader:null, engine:'-', singleShot:false };
     let mediaStream=null, rafId=null, frames=0;
     let duplicateGuard = { code:null, until:0 };
-    let lastOp = null; // {code, qty}
+    let lastOp = null;
 
     // UI referansları
     const selCam = document.getElementById('cameraSelect');
@@ -136,44 +122,32 @@
     const totalQty  = document.getElementById('totalQty');
     const filenameInp = document.getElementById('filename');
     const beep = document.getElementById('beep');
-    const beepOn = document.getElementById('beepOn');
-    const autoAdd = document.getElementById('autoAdd');
     const btnScanOnce = document.getElementById('btnScanOnce');
 
-    // Liste render
+    // Liste işlemleri
     function render(){
       tbody.innerHTML='';
       let sum=0;
       Object.entries(state.items).forEach(([c,q])=>{
         sum += Number(q)||0;
         const tr=document.createElement('tr');
-        tr.innerHTML = `
-          <td>${c}</td>
-          <td class="right">${q}</td>
-          <td class="right">
-            <button class="qtybtn" onclick="inc('${c}',1)">+1</button>
-            <button class="qtybtn" onclick="dec('${c}',1)">-1</button>
-          </td>
-          <td><button onclick="del('${c}')">Sil</button></td>`;
+        tr.innerHTML = `<td>${c}</td><td class="right">${q}</td><td><button onclick="del('${c}')">Sil</button></td>`;
         tbody.appendChild(tr);
       });
       totalRows.textContent = Object.keys(state.items).length;
       totalQty.textContent  = sum;
     }
-    window.inc=(c,n)=>{ state.items[c]=(Number(state.items[c])||0)+ (n||1); lastOp={code:c,qty:(n||1)}; save(); render(); }
-    window.dec=(c,n)=>{ state.items[c]=(Number(state.items[c])||0)- (n||1); if(state.items[c]<=0) delete state.items[c]; lastOp={code:c,qty:-(n||1)}; save(); render(); }
     window.del=(c)=>{ delete state.items[c]; save(); render(); }
     function upsert(c,q){ if(!c) return; const n=Math.max(1,Number(q)||1); state.items[c]=(Number(state.items[c])||0)+n; lastOp={code:c, qty:n}; save(); render(); }
     function undo(){ if(!lastOp) return; const {code,qty}=lastOp; state.items[code]=(Number(state.items[code])||0)-qty; if(state.items[code]<=0) delete state.items[code]; lastOp=null; save(); render(); }
     function save(){ localStorage.setItem('barcodeItems', JSON.stringify(state.items)); }
     function load(){ const raw=localStorage.getItem('barcodeItems'); if(raw){ try{state.items=JSON.parse(raw);}catch{} } render(); }
 
-    // Dışa aktar
+    // Export
     function dl(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
-    function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((filenameInp.value||'sayim')+'.txt', lines.join('\n'), 'text/plain'); }
-    function exportCSV(){ const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)]; dl((filenameInp.value||'sayim')+'.csv', lines.join('\n'), 'text/csv'); }
+    function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((filenameInp.value||'sayim')+'.txt', lines.join('\\n'), 'text/plain'); }
+    function exportCSV(){ const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)]; dl((filenameInp.value||'sayim')+'.csv', lines.join('\\n'), 'text/csv'); }
 
-    // Kamera listesi
     async function listCameras(){
       try{
         const devices = await ZXingBrowser.BrowserMultiFormatReader.listVideoInputDevices();
@@ -182,36 +156,30 @@
         const rear = devices.find(d=>/back|rear|arka/i.test(d.label||''));
         state.currentDeviceId = rear?.deviceId || devices[0]?.deviceId || null;
         if(state.currentDeviceId) selCam.value = state.currentDeviceId;
-      }catch(e){ /* boş */ }
+      }catch(e){}
     }
+
     selCam.onchange = ()=>{ state.currentDeviceId = selCam.value; if(state.scanning) start(); };
 
-    // Başlat / Durdur
     async function start(){
       stop();
       statusEl.textContent = 'Kamera açılıyor...';
       try{
-        const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const constraints = {
-          video: state.currentDeviceId
-            ? { deviceId:{exact:state.currentDeviceId}, width:{ideal:1920}, height:{ideal:1080}, focusMode:'continuous' }
-            : { facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}, focusMode:'continuous' },
+          video: state.currentDeviceId ? { deviceId:{exact:state.currentDeviceId}, width:{ideal:1920}, height:{ideal:1080} } : { facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} },
           audio:false
         };
         mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = mediaStream; await video.play();
         state.scanning = true;
 
-        const hasNative = (!isiOS) && ('BarcodeDetector' in window);
-        if(hasNative){ state.engine='BarcodeDetector'; techEl.textContent='Motor: Yerel (hızlı)'; runNativeLoop(); }
-        else{ state.engine='ZXing'; techEl.textContent='Motor: ZXing'; runZXing(); }
+        state.reader = new ZXingBrowser.BrowserMultiFormatReader();
+        await state.reader.decodeFromVideoElementContinuously(video,(res,err)=>{ frames++; if(res){ onCode(res.getText()); } });
 
-        statusEl.textContent = 'Tarama aktif';
-        fpsCounter();
-      }catch(e){
-        statusEl.textContent = 'Tarama başlatılamadı';
-      }
+        statusEl.textContent = 'Tarama aktif'; fpsCounter();
+      }catch(e){ statusEl.textContent = 'Tarama başlatılamadı'; }
     }
+
     function stop(){
       try{ state.reader?.reset?.(); }catch(_){ }
       cancelAnimationFrame(rafId); rafId=null; frames=0; fpsEl.textContent='FPS: -';
@@ -219,95 +187,40 @@
       video.srcObject=null; mediaStream=null; state.scanning=false; statusEl.textContent='Durduruldu';
     }
 
-    // Yerel motor (Android hızlı)
-    let detector=null, off=null, octx=null;
-    async function runNativeLoop(){
-      if(!detector){ detector = new BarcodeDetector({ formats:['ean_13','ean_8','code_128','code_39','itf','upc_e','upc_a'] }); }
-      if(!off){ off=document.createElement('canvas'); octx=off.getContext('2d',{willReadFrequently:true}); }
-      const loop = async ()=>{
-        if(!state.scanning) return;
-        frames++;
-        const vw=video.videoWidth, vh=video.videoHeight;
-        if(vw&&vh){
-          const rw=Math.floor(vw*0.68), rh=Math.floor(vh*0.32);
-          const rx=Math.floor((vw-rw)/2), ry=Math.floor((vh-rh)/2);
-          off.width=rw; off.height=rh; octx.drawImage(video,rx,ry,rw,rh,0,0,rw,rh);
-          try{ const d=await detector.detect(off); if(d && d.length){ onCode((d[0].rawValue||'').trim()); } }catch(_){ }
-        }
-        if(state.scanning) rafId = requestAnimationFrame(loop);
-      };
-      loop();
-    }
-
-    // ZXing (iPhone ve genel fallback)
-    async function runZXing(){
-      try{
-        state.reader = new ZXingBrowser.BrowserMultiFormatReader();
-        try{
-          const formats=[ZXingBrowser.BarcodeFormat.EAN_13,ZXingBrowser.BarcodeFormat.EAN_8,ZXingBrowser.BarcodeFormat.CODE_128,ZXingBrowser.BarcodeFormat.CODE_39,ZXingBrowser.BarcodeFormat.ITF];
-          state.reader.hints=new Map([[ZXingBrowser.DecodeHintType.POSSIBLE_FORMATS,formats]]);
-        }catch(_){}
-        await state.reader.decodeFromVideoElementContinuously(video,(res,err)=>{ frames++; if(res){ onCode(res.getText()); } });
-      }catch(_){}
-    }
-
-    // Kod bulunduğunda
     function onCode(text){
       if(!text) return;
       const now=performance.now();
-      if(text===duplicateGuard.code && now<duplicateGuard.until) return; // 1.5 sn içinde aynısını alma
+      if(text===duplicateGuard.code && now<duplicateGuard.until) return;
       duplicateGuard={code:text,until:now+1500};
-
-      // Tek sefer modu aktifse durdur
-      if(state.singleShot){
-        stop();
-        btnScanOnce.disabled = true;
-        btnScanOnce.textContent = 'Okundu ✓';
-        setTimeout(()=>{ btnScanOnce.disabled=false; btnScanOnce.textContent='👉 Okut (Tek Sefer)'; }, 1000);
-        state.singleShot=false;
-      }
-
-      if(autoAdd.checked){ upsert(text,1); if(beepOn.checked){ try{beep.currentTime=0;beep.play();}catch(_){} } }
-      else{ barcodeInp.value=text; qtyInp.focus(); if(beepOn.checked){ try{beep.currentTime=0;beep.play();}catch(_){} } }
+      // sadece barkod alanına yaz
+      barcodeInp.value=text; qtyInp.focus();
+      try{ beep.currentTime=0; beep.play(); }catch(_){} 
       if(navigator.vibrate) navigator.vibrate(30);
     }
 
-    // FPS sayacı
     function fpsCounter(){
       let last=performance.now();
-      const tick=()=>{ if(!state.scanning) return; const now=performance.now();
-        if(now-last>=1000){ fpsEl.textContent='FPS: '+frames; frames=0; last=now; }
-        requestAnimationFrame(tick);
-      };
+      const tick=()=>{ if(!state.scanning) return; const now=performance.now(); if(now-last>=1000){ fpsEl.textContent='FPS: '+frames; frames=0; last=now; } requestAnimationFrame(tick); };
       tick();
     }
 
-    // --- UI bağlama
+    // UI
     document.getElementById('btnStart').onclick = async()=>{ await listCameras(); start(); };
     document.getElementById('btnStop').onclick  = ()=> stop();
     document.getElementById('btnAdd').onclick   = ()=>{ upsert(barcodeInp.value.trim(), qtyInp.value); barcodeInp.value=''; qtyInp.value=1; barcodeInp.focus(); };
+    document.getElementById('btnMinus').onclick = ()=>{ qtyInp.value=Math.max(1, Number(qtyInp.value)-1); };
+    document.getElementById('btnPlus').onclick  = ()=>{ qtyInp.value=Number(qtyInp.value)+1; };
+    document.getElementById('btnClearField').onclick = ()=>{ barcodeInp.value=''; };
     document.getElementById('btnExport').onclick= ()=> exportTXT();
     document.getElementById('btnCSV').onclick   = ()=> exportCSV();
     document.getElementById('btnClear').onclick = ()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; save(); render(); } };
     document.getElementById('btnUndo').onclick  = ()=> undo();
-    document.getElementById('btnPlus').onclick  = ()=>{ qtyInp.value = Math.max(1, (Number(qtyInp.value)||1) + 1); };
-    document.getElementById('btnMinus').onclick = ()=>{ qtyInp.value = Math.max(1, (Number(qtyInp.value)||1) - 1); };
-    document.getElementById('btnClearField').onclick = ()=>{ barcodeInp.value=''; barcodeInp.focus(); };
-
-    // Tek seferlik okut
-    btnScanOnce.onclick = async ()=>{
-      await listCameras();
-      state.singleShot = true;
-      btnScanOnce.disabled = true;
-      btnScanOnce.textContent = 'Okutuluyor...';
-      if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif';
-      // kamera başladıktan sonra butonu tekrar tıklanamaz yapalım, okunduğunda otomatik açılacak
-    };
 
     barcodeInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElementById('btnAdd').click(); } });
     qtyInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElementById('btnAdd').click(); } });
 
-    // Başlangıç
+    btnScanOnce.onclick = async ()=>{ await listCameras(); state.singleShot = true; btnScanOnce.disabled = true; btnScanOnce.textContent = 'Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
+
     load(); listCameras();
   </script>
 </body>
