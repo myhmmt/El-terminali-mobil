@@ -274,25 +274,30 @@
 
     for(const raw of lines){
       if(!raw) continue;
+
+      // 01 satırı: PLU ve İsim
       if(raw.startsWith('01')){
         const parts=raw.trim().split(/\s{2,}/);
         if(parts.length>=4){ lastPLU=parts[1]; names[lastPLU]=parts[3]; }
-      }else if(raw.startsWith('02')){
+        continue;
+      }
+
+      // 02 satırı: Barkod + Fiyat(lar)
+      if(raw.startsWith('02')){
+        // 1) Fiyatlar: en sağdaki geçerli (0 < fiyat < 1000) değeri seç
         const matches=raw.match(priceRe)||[];
-        const candNums=[];
-        for(let s of matches){
-          // SAHTE uzun değerleri ele: 100311,90 gibi (virgül hariç rakam uzunluğu > 6 ise at)
-          if(s.replace(/[^\d]/g,'').length > 6) continue;
-          const {num}=normPriceStr(s);
-          if(num>0) candNums.push(num);
-        }
         let priceDisp='';
-        if(candNums.length){
-          const min=Math.min(...candNums);
-          priceDisp=min.toFixed(2).replace('.',',');
+        if(matches.length){
+          const nums = matches
+            .map(s=>normPriceStr(s).num)
+            .filter(n=>n>0 && n<1000);          // 100311,90 gibi çöpleri at
+          if(nums.length){
+            const last = nums[nums.length-1];   // EN SAĞDAKİ
+            priceDisp = last.toFixed(2).replace('.',',');
+          }
         }
 
-        // barkod (8..14 hane) — PLU’yu at
+        // 2) Barkod tespiti (8..14 hane) — PLU’yu at
         const nums=(raw.match(/\b\d{8,14}\b/g)||[]);
         const candidates=nums.filter(n=>n!==lastPLU);
         let bc=candidates.filter(n=>n.length===13||n.length===12).pop()
