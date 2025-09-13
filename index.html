@@ -47,7 +47,7 @@
   </header>
 
   <div class="wrap">
-    <!-- Kamera kartı -->
+    <!-- Kamera -->
     <div class="card">
       <div class="row">
         <label>Kamera:</label>
@@ -63,12 +63,11 @@
       </div>
       <div class="status">
         <span id="scanStatus" class="chip">Hazır</span>
-        <span id="tech" class="chip">Motor: -</span>
         <span id="fps" class="chip">FPS: -</span>
       </div>
     </div>
 
-    <!-- Liste kartı -->
+    <!-- Liste -->
     <div class="card">
       <label>Barkod & Adet</label>
       <div class="row">
@@ -102,18 +101,16 @@
     <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
   </div>
 
-  <script src="https://unpkg.com/@zxing/browser@0.1.6"></script>
   <script>
-    const state = { items:{}, scanning:false, currentDeviceId:null, reader:null, engine:'-', singleShot:false };
+    const state = { items:{}, scanning:false, currentDeviceId:null, singleShot:false };
     let mediaStream=null, rafId=null, frames=0;
     let duplicateGuard = { code:null, until:0 };
     let lastOp = null;
+    let detector=null, off=null, octx=null;
 
-    // UI referansları
     const selCam = document.getElementById('cameraSelect');
     const video  = document.getElementById('video');
     const statusEl = document.getElementById('scanStatus');
-    const techEl = document.getElementById('tech');
     const fpsEl  = document.getElementById('fps');
     const barcodeInp = document.getElementById('barcode');
     const qtyInp  = document.getElementById('qty');
@@ -124,7 +121,6 @@
     const beep = document.getElementById('beep');
     const btnScanOnce = document.getElementById('btnScanOnce');
 
-    // Liste işlemleri
     function render(){
       tbody.innerHTML='';
       let sum=0;
@@ -143,22 +139,21 @@
     function save(){ localStorage.setItem('barcodeItems', JSON.stringify(state.items)); }
     function load(){ const raw=localStorage.getItem('barcodeItems'); if(raw){ try{state.items=JSON.parse(raw);}catch{} } render(); }
 
-    // Export
     function dl(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
     function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((filenameInp.value||'sayim')+'.txt', lines.join('\\n'), 'text/plain'); }
     function exportCSV(){ const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)]; dl((filenameInp.value||'sayim')+'.csv', lines.join('\\n'), 'text/csv'); }
 
     async function listCameras(){
       try{
-        const devices = await ZXingBrowser.BrowserMultiFormatReader.listVideoInputDevices();
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videos = devices.filter(d=>d.kind==='videoinput');
         selCam.innerHTML='';
-        devices.forEach((d,i)=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||`Kamera ${i+1}`; selCam.appendChild(o); });
-        const rear = devices.find(d=>/back|rear|arka/i.test(d.label||''));
-        state.currentDeviceId = rear?.deviceId || devices[0]?.deviceId || null;
+        videos.forEach((d,i)=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||`Kamera ${i+1}`; selCam.appendChild(o); });
+        const rear = videos.find(d=>/back|rear|arka/i.test(d.label||''));
+        state.currentDeviceId = rear?.deviceId || videos[0]?.deviceId || null;
         if(state.currentDeviceId) selCam.value = state.currentDeviceId;
       }catch(e){}
     }
-
     selCam.onchange = ()=>{ state.currentDeviceId = selCam.value; if(state.scanning) start(); };
 
     async function start(){
@@ -166,25 +161,41 @@
       statusEl.textContent = 'Kamera açılıyor...';
       try{
         const constraints = {
-          video: state.currentDeviceId ? { deviceId:{exact:state.currentDeviceId}, width:{ideal:1920}, height:{ideal:1080} } : { facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} },
+          video: state.currentDeviceId ? { deviceId:{exact:state.currentDeviceId}, width:{ideal:1920}, height:{ideal:1080} }
+                                      : { facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} },
           audio:false
         };
         mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = mediaStream; await video.play();
         state.scanning = true;
-
-        state.reader = new ZXingBrowser.BrowserMultiFormatReader();
-        await state.reader.decodeFromVideoElementContinuously(video,(res,err)=>{ frames++; if(res){ onCode(res.getText()); } });
-
-        statusEl.textContent = 'Tarama aktif'; fpsCounter();
+        statusEl.textContent = 'Tarama aktif';
+        runNativeLoop();
+        fpsCounter();
       }catch(e){ statusEl.textContent = 'Tarama başlatılamadı'; }
     }
 
     function stop(){
-      try{ state.reader?.reset?.(); }catch(_){ }
       cancelAnimationFrame(rafId); rafId=null; frames=0; fpsEl.textContent='FPS: -';
       const s = video.srcObject; if(s?.getTracks) s.getTracks().forEach(t=>t.stop());
       video.srcObject=null; mediaStream=null; state.scanning=false; statusEl.textContent='Durduruldu';
+    }
+
+    async function runNativeLoop(){
+      if(!detector){ detector = new BarcodeDetector({ formats:['ean_13','ean_8','code_128','code_39','itf','upc_e','upc_a'] }); }
+      if(!off){ off=document.createElement('canvas'); octx=off.getContext('2d',{willReadFrequently:true}); }
+      const loop = async ()=>{
+        if(!state.scanning) return;
+        frames++;
+        const vw=video.videoWidth, vh=video.videoHeight;
+        if(vw&&vh){
+          const rw=Math.floor(vw*0.68), rh=Math.floor(vh*0.32);
+          const rx=Math.floor((vw-rw)/2), ry=Math.floor((vh-rh)/2);
+          off.width=rw; off.height=rh; octx.drawImage(video,rx,ry,rw,rh,0,0,rw,rh);
+          try{ const d=await detector.detect(off); if(d && d.length){ onCode((d[0].rawValue||'').trim()); } }catch(_){ }
+        }
+        if(state.scanning) rafId=requestAnimationFrame(loop);
+      };
+      loop();
     }
 
     function onCode(text){
@@ -192,10 +203,10 @@
       const now=performance.now();
       if(text===duplicateGuard.code && now<duplicateGuard.until) return;
       duplicateGuard={code:text,until:now+1500};
-      // sadece barkod alanına yaz
       barcodeInp.value=text; qtyInp.focus();
       try{ beep.currentTime=0; beep.play(); }catch(_){} 
       if(navigator.vibrate) navigator.vibrate(30);
+      if(state.singleShot){ stop(); btnScanOnce.disabled=true; btnScanOnce.textContent='Okundu ✓'; setTimeout(()=>{btnScanOnce.disabled=false; btnScanOnce.textContent='👉 Okut (Tek Sefer)';},1000); state.singleShot=false; }
     }
 
     function fpsCounter(){
@@ -219,7 +230,7 @@
     barcodeInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElementById('btnAdd').click(); } });
     qtyInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElementById('btnAdd').click(); } });
 
-    btnScanOnce.onclick = async ()=>{ await listCameras(); state.singleShot = true; btnScanOnce.disabled = true; btnScanOnce.textContent = 'Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
+    btnScanOnce.onclick = async ()=>{ await listCameras(); state.singleShot = true; btnScanOnce.disabled = true; btnScanOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
 
     load(); listCameras();
   </script>
