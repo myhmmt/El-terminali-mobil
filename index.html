@@ -1,412 +1,313 @@
 <!doctype html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Genç Gross Mobil Terminal — Barkod + Adet → TXT</title>
-  <style>
-    :root{
-      --blue:#1C2AAE; --orange:#F0552C;
-      --bg:#fff; --card:#f6f8ff; --text:#102050; --muted:#667;
-      --ok:#1fbf75; --warn:#ff5d5d;
-    }
-    *{box-sizing:border-box}
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:var(--text)}
-    header{padding:14px 10px;background:linear-gradient(90deg,var(--orange),var(--blue));color:#fff}
-    header .wrap{max-width:980px;margin:auto;display:flex;justify-content:space-between;align-items:center}
-    header .ttl{font-weight:800;letter-spacing:.3px}
-    .wrap{max-width:980px;margin:auto;padding:10px}
-    .card{margin:10px 0;padding:12px;background:var(--card);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.06)}
-    button{padding:8px 12px;margin:2px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
-    .primary{background:var(--blue);color:#fff}
-    .accent{background:var(--orange);color:#fff}
-    .good{background:var(--ok);color:#fff}
-    .warn{background:var(--warn);color:#fff}
-    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    label{font-size:13px}
-    input[type="file"],input[type="text"],input[type="number"],select,textarea{border:1px solid #d6daf2;border-radius:8px;padding:8px}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{border-bottom:1px solid #dbe1ff;padding:8px}
-    th{background:#e9edff;color:#233}
-    .right{text-align:right}
-    .muted{color:var(--muted);font-size:12px}
-    .chip{display:inline-block;background:#e8ecff;color:#334;padding:2px 8px;border-radius:999px;font-size:12px;margin-right:6px;border:1px solid #d6daf2}
-    .videoBox{position:relative;border-radius:12px;overflow:hidden;background:#000}
-    video{display:block;width:100%;max-height:320px}
-    .roi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-    .roi:after{content:"";width:68%;height:32%;border:2px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
-    .qtybtn{padding:6px 10px;border:1px solid #d6daf2;background:#fff;border-radius:8px}
-    .pname{font-weight:700;color:#0a7a2b}
-    .pprice{font-weight:700;color:#a14900}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Genç Gross Mobil Terminal — Barkod + Adet → TXT</title>
+<style>
+  :root{--blue:#1C2AAE;--orange:#F0552C;--bg:#fff;--card:#f6f8ff;--text:#102050;--muted:#667;--ok:#1fbf75;--warn:#ff5d5d}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:var(--text)}
+  header{padding:14px 10px;background:linear-gradient(90deg,var(--orange),var(--blue));color:#fff}
+  header .wrap{max-width:980px;margin:auto;display:flex;justify-content:space-between;align-items:center}
+  header .ttl{font-weight:800;letter-spacing:.3px}
+  .wrap{max-width:980px;margin:auto;padding:10px}
+  .card{margin:10px 0;padding:12px;background:var(--card);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+  button{padding:8px 12px;margin:2px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+  .primary{background:var(--blue);color:#fff}
+  .accent{background:var(--orange);color:#fff}
+  .good{background:var(--ok);color:#fff}
+  .warn{background:var(--warn);color:#fff}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  label{font-size:13px}
+  input[type="file"],input[type="text"],input[type="number"],input[type="tel"],select{border:1px solid #d6daf2;border-radius:8px;padding:8px}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border-bottom:1px solid #dbe1ff;padding:8px}
+  th{background:#e9edff;color:#233}
+  .right{text-align:right}
+  .muted{color:var(--muted);font-size:12px}
+  .chip{display:inline-block;background:#e8ecff;color:#334;padding:2px 8px;border-radius:999px;font-size:12px;margin-right:6px;border:1px solid #d6daf2}
+  .videoBox{position:relative;border-radius:12px;overflow:hidden;background:#000}
+  video{display:block;width:100%;max-height:320px}
+  .roi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .roi:after{content:"";width:68%;height:32%;border:2px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
+  .qtybtn{padding:6px 10px;border:1px solid #d6daf2;background:#fff;border-radius:8px}
+  .pname{font-weight:700;color:#0a7a2b}
+  .pprice{font-weight:700;color:#a14900}
+</style>
 </head>
 <body>
-  <header>
-    <div class="wrap">
-      <div class="ttl">📦 GENÇ GROSS MOBİL TERMİNAL</div>
-      <div>Barkod + Adet → TXT</div>
-    </div>
-  </header>
-
+<header>
   <div class="wrap">
-    <!-- KAMERA -->
-    <div class="card">
-      <div class="row">
-        <label>Kamera:</label>
-        <select id="cameraSelect"></select>
-        <button id="btnStart" class="primary">Kamerayı Başlat</button>
-        <button id="btnStop">Durdur</button>
-        <button id="btnScanOnce" class="accent" style="margin-left:auto">👉 Tek Okut</button>
-      </div>
+    <div class="ttl">📦 GENÇ GROSS MOBİL TERMİNAL</div>
+    <div>Barkod + Adet → TXT</div>
+  </div>
+</header>
 
-      <div class="videoBox">
-        <video id="video" playsinline autoplay muted></video>
-        <div class="roi"></div>
-      </div>
-      <div class="status">
-        <span id="scanStatus" class="chip">Hazır</span>
-        <span id="fps" class="chip">FPS: -</span>
-      </div>
+<div class="wrap">
+  <!-- KAMERA -->
+  <div class="card">
+    <div class="row">
+      <label>Kamera:</label>
+      <select id="cameraSelect"></select>
+      <button id="btnStart" class="primary">Kamerayı Başlat</button>
+      <button id="btnStop">Durdur</button>
+      <button id="btnScanOnce" class="accent" style="margin-left:auto">👉 Tek Okut</button>
     </div>
-
-    <!-- LİSTE + GİRİŞ -->
-    <div class="card">
-      <label>Barkod & Adet</label>
-      <div class="row">
-        <input id="barcode" placeholder="Barkod" style="flex:1;min-width:220px" />
-        <button id="btnClearField">Temizle</button>
-      </div>
-      <div class="row">
-        <button id="btnMinus" class="qtybtn">−1</button>
-        <input id="qty" type="number" value="1" min="1" step="1" style="width:90px;text-align:center" />
-        <button id="btnPlus" class="qtybtn">+1</button>
-        <button id="btnAdd" class="good">Ekle</button>
-        <button id="btnUndo">Geri Al</button>
-      </div>
-
-      <div class="muted">Ürün: <span id="productName" class="pname">—</span> · Fiyat: <span id="productPrice" class="pprice">—</span></div>
-
-      <label>Dosya Adı:</label>
-      <input id="filename" placeholder="sayim" style="width:60%" />
-
-      <div class="row" style="margin-top:8px">
-        <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
-        <button id="btnCSV" class="accent">CSV Olarak Dışa Aktar</button>
-        <button id="btnClear" class="warn">Listeyi Temizle</button>
-      </div>
-
-      <table>
-        <thead><tr><th>Barkod</th><th>İsim</th><th class="right">Adet</th><th></th></tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-      Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
+    <div class="videoBox">
+      <video id="video" playsinline autoplay muted></video>
+      <div class="roi"></div>
     </div>
-
-    <!-- ÜRÜN VERİSİ -->
-    <div class="card">
-      <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle (opsiyonel)</h3>
-      <div class="muted">GDF/TXT (ERP çıktısı) veya CSV/JSON yükleyebilirsin. CSV örnek: <code>barkod;isim;fiyat</code></div>
-      <div class="row">
-        <input id="productFile" type="file" accept=".gdf,.txt,.csv,.json" />
-        <button id="btnClearMap">Ürün Verisini Temizle</button>
-        <span class="chip" id="mapStat">0 ürün yüklü</span>
-      </div>
-
-      <!-- Yapıştırarak yükleme -->
-      <div style="margin-top:10px">
-        <div class="muted" style="margin:6px 0">Dosya yoksa buraya veriyi yapıştır:
-          <code>barkod;isim;fiyat</code> satır satır (CSV) veya imzalı GDF metni.
-        </div>
-        <textarea id="pasteArea" rows="6" style="width:100%" placeholder="8697449113051;Örnek Ürün;259,90&#10;8697433680118;Başka Ürün;19,99"></textarea>
-        <div class="row">
-          <button id="btnLoadPaste" class="primary">Yapıştırılanı Yükle</button>
-          <span class="chip" id="pasteInfo">—</span>
-        </div>
-      </div>
+    <div class="status">
+      <span id="scanStatus" class="chip">Hazır</span>
+      <span id="fps" class="chip">FPS: -</span>
     </div>
-
-    <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
   </div>
 
-  <script>
-    // ==== DURUM ====
-    const state = { items:{}, scanning:false, currentDeviceId:null, singleShot:false };
-    let mediaStream=null, rafId=null, frames=0;
-    let duplicateGuard = { code:null, until:0 };
-    let lastOp = null;
-    let detector=null, off=null, octx=null;
-    let productMap = {}; // { barcode: {name, price} }
+  <!-- LİSTE + GİRİŞ -->
+  <div class="card">
+    <label>Barkod & Adet</label>
+    <div class="row">
+      <!-- SAYISAL KLAVYE: type=tel + inputmode=numeric + pattern -->
+      <input id="barcode" type="tel" inputmode="numeric" pattern="[0-9]*"
+             autocomplete="off" placeholder="Barkod" style="flex:1;min-width:220px" />
+      <button id="btnClearField">Temizle</button>
+    </div>
+    <div class="row">
+      <button id="btnMinus" class="qtybtn">−1</button>
+      <input id="qty" type="number" value="1" min="1" step="1" style="width:90px;text-align:center" />
+      <button id="btnPlus" class="qtybtn">+1</button>
+      <button id="btnAdd" class="good">Ekle</button>
+      <button id="btnUndo">Geri Al</button>
+    </div>
 
-    // ==== UI ====
-    const selCam = document.getElementById('cameraSelect');
-    const video  = document.getElementById('video');
-    const statusEl = document.getElementById('scanStatus');
-    const fpsEl  = document.getElementById('fps');
-    const barcodeInp = document.getElementById('barcode');
-    const qtyInp  = document.getElementById('qty');
-    const tbody   = document.getElementById('tbody');
-    const totalRows = document.getElementById('totalRows');
-    const totalQty  = document.getElementById('totalQty');
-    const filenameInp = document.getElementById('filename');
-    const beep = document.getElementById('beep');
-    const btnScanOnce = document.getElementById('btnScanOnce');
-    const productNameEl = document.getElementById('productName');
-    const productPriceEl= document.getElementById('productPrice');
-    const productFile   = document.getElementById('productFile');
-    const mapStat       = document.getElementById('mapStat');
+    <div class="muted">Ürün: <span id="productName" class="pname">—</span> · Fiyat: <span id="productPrice" class="pprice">—</span></div>
 
-    // ==== LİSTE ====
-    function render(){
-      tbody.innerHTML='';
-      let sum=0;
-      Object.entries(state.items).forEach(([c,q])=>{
-        sum += Number(q)||0;
-        const name = (productMap[c]?.name) || '—';
-        const tr=document.createElement('tr');
-        tr.innerHTML = `<td>${c}</td><td>${name}</td><td class="right">${q}</td><td><button onclick="del('${c}')">Sil</button></td>`;
-        tbody.appendChild(tr);
-      });
-      totalRows.textContent = Object.keys(state.items).length;
-      totalQty.textContent  = sum;
-    }
-    window.del=(c)=>{ delete state.items[c]; save(); render(); }
-    function upsert(c,q){ if(!c) return; const n=Math.max(1,Number(q)||1); state.items[c]=(Number(state.items[c])||0)+n; lastOp={code:c, qty:n}; save(); render(); }
-    function undo(){ if(!lastOp) return; const {code,qty}=lastOp; state.items[code]=(Number(state.items[code])||0)-qty; if(state.items[code]<=0) delete state.items[code]; lastOp=null; save(); render(); }
-    function save(){ localStorage.setItem('barcodeItems', JSON.stringify(state.items)); }
-    function load(){ const raw=localStorage.getItem('barcodeItems'); if(raw){ try{state.items=JSON.parse(raw);}catch{} } render(); }
+    <label>Dosya Adı:</label>
+    <input id="filename" placeholder="sayim" style="width:60%" />
 
-    // ==== EXPORT ====
-    function dl(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
-    function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((filenameInp.value||'sayim')+'.txt', lines.join('\n'), 'text/plain'); }
-    function exportCSV(){ const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)]; dl((filenameInp.value||'sayim')+'.csv', lines.join('\n'), 'text/csv'); }
+    <div class="row" style="margin-top:8px">
+      <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
+      <button id="btnCSV" class="accent">CSV Olarak Dışa Aktar</button>
+      <button id="btnClear" class="warn">Listeyi Temizle</button>
+    </div>
 
-    // ==== KAMERA ====
-    async function listCameras(){
-      try{
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videos = devices.filter(d=>d.kind==='videoinput');
-        selCam.innerHTML='';
-        videos.forEach((d,i)=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||`Kamera ${i+1}`; selCam.appendChild(o); });
-        const rear = videos.find(d=>/back|rear|arka/i.test(d.label||''));
-        state.currentDeviceId = rear?.deviceId || videos[0]?.deviceId || null;
-        if(state.currentDeviceId) selCam.value = state.currentDeviceId;
-      }catch(e){}
-    }
-    selCam.onchange = ()=>{ state.currentDeviceId = selCam.value; if(state.scanning) start(); };
+    <table>
+      <thead><tr><th>Barkod</th><th>İsim</th><th class="right">Adet</th><th></th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
+  </div>
 
-    async function start(){
-      stop();
-      statusEl.textContent = 'Kamera açılıyor...';
-      try{
-        const constraints = {
-          video: state.currentDeviceId ? { deviceId:{exact:state.currentDeviceId}, width:{ideal:1920}, height:{ideal:1080} }
-                                      : { facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} },
-          audio:false
-        };
-        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = mediaStream; await video.play();
-        state.scanning = true;
-        statusEl.textContent = 'Tarama aktif';
-        runNativeLoop();
-        fpsCounter();
-      }catch(e){ statusEl.textContent = 'Tarama başlatılamadı'; }
-    }
+  <!-- ÜRÜN VERİSİ (SADECE DOSYA) -->
+  <div class="card">
+    <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle (opsiyonel)</h3>
+    <div class="muted">GDF/TXT (ERP çıktısı) veya CSV/JSON yükleyebilirsin. CSV örnek: <code>barkod;isim;fiyat</code></div>
+    <div class="row">
+      <input id="productFile" type="file" accept=".gdf,.txt,.csv,.json" />
+      <button id="btnClearMap">Ürün Verisini Temizle</button>
+      <span class="chip" id="mapStat">0 ürün yüklü</span>
+    </div>
+  </div>
 
-    function stop(){
-      cancelAnimationFrame(rafId); rafId=null; frames=0; fpsEl.textContent='FPS: -';
-      const s = video.srcObject; if(s?.getTracks) s.getTracks().forEach(t=>t.stop());
-      video.srcObject=null; mediaStream=null; state.scanning=false; statusEl.textContent='Durduruldu';
-    }
+  <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+</div>
 
-    function showProductInfo(code){
-      const p = productMap[code];
-      if(p){ productNameEl.textContent = p.name || '—'; productPriceEl.textContent = p.price || '—'; }
-      else { productNameEl.textContent = 'Bulunamadı'; productPriceEl.textContent = '—'; }
-    }
+<script>
+  // ==== DURUM ====
+  const state={items:{},scanning:false,currentDeviceId:null,singleShot:false};
+  let mediaStream=null,rafId=null,frames=0,duplicateGuard={code:null,until:0},lastOp=null,detector=null,off=null,octx=null;
+  let productMap={};
 
-    async function runNativeLoop(){
-      if(!('BarcodeDetector' in window)){ statusEl.textContent='Desteklenmiyor'; return; }
-      if(!detector){ detector = new BarcodeDetector({ formats:['ean_13','ean_8','code_128','code_39','itf','upc_e','upc_a'] }); }
-      if(!off){ off=document.createElement('canvas'); octx=off.getContext('2d',{willReadFrequently:true}); }
-      const loop = async ()=>{
-        if(!state.scanning) return;
-        frames++;
-        const vw=video.videoWidth, vh=video.videoHeight;
-        if(vw&&vh){
-          const rw=Math.floor(vw*0.68), rh=Math.floor(vh*0.32);
-          const rx=Math.floor((vw-rw)/2), ry=Math.floor((vh-rh)/2);
-          off.width=rw; off.height=rh; octx.drawImage(video,rx,ry,rw,rh,0,0,rw,rh);
-          try{
-            const d=await detector.detect(off);
-            if(d && d.length){ onCode((d[0].rawValue||'').trim()); }
-          }catch(_){}
-        }
-        if(state.scanning) rafId=requestAnimationFrame(loop);
-      };
-      loop();
-    }
+  // ==== UI ====
+  const selCam=document.getElementById('cameraSelect');
+  const video=document.getElementById('video');
+  const statusEl=document.getElementById('scanStatus');
+  const fpsEl=document.getElementById('fps');
+  const barcodeInp=document.getElementById('barcode');
+  const qtyInp=document.getElementById('qty');
+  const tbody=document.getElementById('tbody');
+  const totalRows=document.getElementById('totalRows');
+  const totalQty=document.getElementById('totalQty');
+  const filenameInp=document.getElementById('filename');
+  const beep=document.getElementById('beep');
+  const btnScanOnce=document.getElementById('btnScanOnce');
+  const productNameEl=document.getElementById('productName');
+  const productPriceEl=document.getElementById('productPrice');
+  const productFile=document.getElementById('productFile');
+  const mapStat=document.getElementById('mapStat');
 
-    function onCode(text){
-      if(!text) return;
-      const now=performance.now();
-      if(text===duplicateGuard.code && now<duplicateGuard.until) return;
-      duplicateGuard={code:text,until:now+1500};
-      barcodeInp.value=text;
-      showProductInfo(text);
-      try{ beep.currentTime=0; beep.play(); }catch(_){} 
-      if(navigator.vibrate) navigator.vibrate(30);
+  // ==== LİSTE ====
+  function render(){
+    tbody.innerHTML='';
+    let sum=0;
+    Object.entries(state.items).forEach(([c,q])=>{
+      sum+=Number(q)||0;
+      const name=(productMap[c]?.name)||'—';
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${c}</td><td>${name}</td><td class="right">${q}</td><td><button onclick="del('${c}')">Sil</button></td>`;
+      tbody.appendChild(tr);
+    });
+    totalRows.textContent=Object.keys(state.items).length;
+    totalQty.textContent=sum;
+  }
+  window.del=(c)=>{delete state.items[c];save();render();}
+  function upsert(c,q){if(!c)return;const n=Math.max(1,Number(q)||1);state.items[c]=(Number(state.items[c])||0)+n;lastOp={code:c,qty:n};save();render();}
+  function undo(){if(!lastOp)return;const {code,qty}=lastOp;state.items[code]=(Number(state.items[code])||0)-qty;if(state.items[code]<=0)delete state.items[code];lastOp=null;save();render();}
+  function save(){localStorage.setItem('barcodeItems',JSON.stringify(state.items));}
+  function load(){const raw=localStorage.getItem('barcodeItems');if(raw){try{state.items=JSON.parse(raw);}catch{}}render();}
 
-      if(state.singleShot){
-        stop();
-        btnScanOnce.disabled=true; btnScanOnce.textContent='Okundu ✓';
-        setTimeout(()=>{btnScanOnce.disabled=false; btnScanOnce.textContent='👉 Tek Okut';},900);
-        state.singleShot=false;
-      }
-    }
+  // ==== EXPORT ====
+  function dl(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();URL.revokeObjectURL(a.href);}
+  function exportTXT(){const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`);dl((filenameInp.value||'sayim')+'.txt',lines.join('\n'),'text/plain');}
+  function exportCSV(){const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)];dl((filenameInp.value||'sayim')+'.csv',lines.join('\n'),'text/csv');}
 
-    function fpsCounter(){
-      let last=performance.now();
-      const tick=()=>{ if(!state.scanning) return; const now=performance.now(); if(now-last>=1000){ fpsEl.textContent='FPS: '+frames; frames=0; last=now; } requestAnimationFrame(tick); };
-      tick();
-    }
-
-    // ==== ÜRÜN VERİSİ YÜKLE (dosya + yapıştır) ====
-    document.getElementById('btnClearMap').onclick = ()=>{ productMap={}; localStorage.removeItem('productMap'); mapStat.textContent='0 ürün yüklü'; showProductInfo(''); };
-
-    productFile.onchange = async (e)=>{
-      const file = e.target.files?.[0]; if(!file) return;
-      const name = file.name || '';
-      let txt = '';
-      try { txt = await file.text(); } catch { alert('Dosya okunamadı.'); return; }
-      loadProductText(txt, name);
-    };
-
-    document.getElementById('btnLoadPaste').onclick = ()=>{
-      const txt = (document.getElementById('pasteArea').value || '').trim();
-      if(!txt){ alert('Önce metni yapıştır.'); return; }
-      loadProductText(txt, 'yapıştırılan metin');
-    };
-
-    function loadProductText(txt, sourceName='metin'){
-      try{
-        let map = {};
-        if (txt.startsWith('<SIGNATURE=GNDPLU.GDF>')) {
-          map = parseGDF(txt);
-        } else if (txt.trim().startsWith('{')) {
-          const obj = JSON.parse(txt);
-          for(const [k,v] of Object.entries(obj)){
-            if(typeof v === 'string') map[k] = {name:v, price:''};
-            else map[k] = {name:v.name||'', price:v.price||''};
-          }
-        } else {
-          map = parseCSV(txt);
-        }
-        const count = Object.keys(map).length;
-        if(count===0){
-          const first = (txt.split(/\r?\n/)[0]||'').slice(0,120);
-          alert(`0 ürün bulundu (${sourceName}).\nİlk satır: "${first}"\nÖrnek:\n8697449113051;Örnek Ürün;259,90`);
-          return;
-        }
-        productMap = map;
-        localStorage.setItem('productMap', JSON.stringify(productMap));
-        mapStat.textContent = count + ' ürün yüklü';
-        document.getElementById('pasteInfo').textContent = `${count} satır okundu`;
-        showProductInfo(barcodeInp.value.trim());
-        alert(`${count} ürün yüklendi (${sourceName}).`);
-      }catch(err){
-        console.error(err);
-        alert('Veri çözümlenemedi. CSV/TXT (barkod;isim;fiyat), JSON veya imzalı GDF kullanın.');
-      }
-    }
-
-    // CSV/TXT: barkod;isim;fiyat  (ayraç ; veya ,)
-    function parseCSV(txt){
-      const lines = txt.split(/\r?\n/).filter(x=>x.trim().length);
-      const sep = lines[0]?.includes(';') ? ';' : ',';
-      const map = {};
-      for (const L of lines){
-        const cols = L.split(sep).map(s=>s.trim());
-        if (cols.length>=2){
-          const bc = cols[0];
-          const name = cols[1];
-          let price = (cols[2]||'').replace(/\s/g,'');
-
-          // EN 1,234.56 -> 1234,56
-          if (/^\d{1,3}(?:,\d{3})*\.\d{2}$/.test(price))
-            price = price.replace(/,/g,'').replace(/\./,',');
-          // TR 1.234,56 -> 1234,56
-          if (/^\d{1,3}(?:\.\d{3})*,\d{2}$/.test(price))
-            price = price.replace(/\./g,'');
-
-          if (/^[0-9]{8,14}$/.test(bc)) map[bc] = { name, price };
-        }
-      }
-      return map;
-    }
-
-    // GDF: 01 (PLU+İsim), 02 (Barkod+Fiyatlar). Sağdaki gerçek satış fiyatı.
-    function parseGDF(txt){
-      const lines = txt.split(/\r?\n/);
-      const names = {}; // plu -> name
-      const map = {};
-      let lastPLU = null;
-      const priceRe = /(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})/g;
-
-      for (const raw of lines){
-        if(!raw) continue;
-
-        if (raw.startsWith('01')){
-          const parts = raw.trim().split(/\s{2,}/);
-          if (parts.length>=4){ lastPLU = parts[1]; names[lastPLU] = parts[3]; }
-        } 
-        else if (raw.startsWith('02')){
-          const prices = raw.match(priceRe) || [];
-          let price = prices.length ? prices[prices.length-1] : '';
-          price = price.replace(/\./g,'');
-          if (/^1001\d+,\d{2}$/.test(price)) price = price.slice(4);
-          else if (/^100\d+,\d{2}$/.test(price)) price = price.slice(3);
-          if (!/^0,\d{2}$/.test(price)) price = price.replace(/^0+(?=\d)/,'');
-
-          const nums = raw.match(/\b\d{12,14}\b/g) || [];
-          const bc = nums.filter(n=>n!==lastPLU).pop() || '';
-          const name = names[lastPLU] || '';
-          if (bc && name) map[bc] = { name, price };
-        }
-      }
-      return map;
-    }
-
-    // ==== OLAYLAR ====
-    document.getElementById('btnStart').onclick = async()=>{ await listCameras(); start(); };
-    document.getElementById('btnStop').onclick  = ()=> stop();
-    document.getElementById('btnAdd').onclick   = ()=>{ upsert(barcodeInp.value.trim(), qtyInp.value); barcodeInp.value=''; qtyInp.value=1; showProductInfo(''); };
-    document.getElementById('btnMinus').onclick = ()=>{ qtyInp.value=Math.max(1, Number(qtyInp.value)-1); };
-    document.getElementById('btnPlus').onclick  = ()=>{ qtyInp.value=Number(qtyInp.value)+1; };
-    document.getElementById('btnClearField').onclick = ()=>{ barcodeInp.value=''; showProductInfo(''); };
-    document.getElementById('btnExport').onclick= ()=> exportTXT();
-    document.getElementById('btnCSV').onclick   = ()=> exportCSV();
-    document.getElementById('btnClear').onclick = ()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; save(); render(); } };
-    document.getElementById('btnUndo').onclick  = ()=> undo();
-
-    // Elle yazınca da ürün bilgisini göster
-    barcodeInp.addEventListener('input', ()=>{ const code=barcodeInp.value.trim(); if(code.length>=8) showProductInfo(code); });
-    barcodeInp.addEventListener('blur',  ()=>{ const code=barcodeInp.value.trim(); if(code) showProductInfo(code); });
-
-    // Tek okuma
-    btnScanOnce.onclick = async ()=>{
-      await listCameras();
-      state.singleShot = true;
-      btnScanOnce.disabled = true;
-      btnScanOnce.textContent='Okutuluyor...';
-      if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif';
-    };
-
-    // Başlangıç
-    load(); listCameras();
+  // ==== KAMERA ====
+  async function listCameras(){
     try{
-      const pm = localStorage.getItem('productMap');
-      if(pm){ productMap = JSON.parse(pm); mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü'; }
-    }catch{}
-  </script>
+      const devices=await navigator.mediaDevices.enumerateDevices();
+      const videos=devices.filter(d=>d.kind==='videoinput');
+      selCam.innerHTML='';
+      videos.forEach((d,i)=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||`Kamera ${i+1}`;selCam.appendChild(o);});
+      const rear=videos.find(d=>/back|rear|arka/i.test(d.label||''));state.currentDeviceId=rear?.deviceId||videos[0]?.deviceId||null;
+      if(state.currentDeviceId)selCam.value=state.currentDeviceId;
+    }catch(e){}
+  }
+  selCam.onchange=()=>{state.currentDeviceId=selCam.value;if(state.scanning)start();};
+
+  async function start(){
+    stop();statusEl.textContent='Kamera açılıyor...';
+    try{
+      const constraints={video:state.currentDeviceId?{deviceId:{exact:state.currentDeviceId},width:{ideal:1920},height:{ideal:1080}}:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false};
+      mediaStream=await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject=mediaStream;await video.play();state.scanning=true;statusEl.textContent='Tarama aktif';runNativeLoop();fpsCounter();
+    }catch(e){statusEl.textContent='Tarama başlatılamadı';}
+  }
+  function stop(){
+    cancelAnimationFrame(rafId);rafId=null;frames=0;fpsEl.textContent='FPS: -';
+    const s=video.srcObject;if(s?.getTracks)s.getTracks().forEach(t=>t.stop());video.srcObject=null;mediaStream=null;state.scanning=false;statusEl.textContent='Durduruldu';
+  }
+  function showProductInfo(code){
+    const p=productMap[code];
+    if(p){productNameEl.textContent=p.name||'—';productPriceEl.textContent=p.price||'—';}
+    else{productNameEl.textContent='Bulunamadı';productPriceEl.textContent='—';}
+  }
+  async function runNativeLoop(){
+    if(!('BarcodeDetector'in window)){statusEl.textContent='Desteklenmiyor';return;}
+    if(!detector){detector=new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','itf','upc_e','upc_a']});}
+    if(!off){off=document.createElement('canvas');octx=off.getContext('2d',{willReadFrequently:true});}
+    const loop=async()=>{
+      if(!state.scanning)return;frames++;
+      const vw=video.videoWidth,vh=video.videoHeight;
+      if(vw&&vh){
+        const rw=Math.floor(vw*0.68),rh=Math.floor(vh*0.32);
+        const rx=Math.floor((vw-rw)/2),ry=Math.floor((vh-rh)/2);
+        off.width=rw;off.height=rh;octx.drawImage(video,rx,ry,rw,rh,0,0,rw,rh);
+        try{const d=await detector.detect(off);if(d&&d.length){onCode((d[0].rawValue||'').trim());}}catch(_){}
+      }
+      if(state.scanning)rafId=requestAnimationFrame(loop);
+    };loop();
+  }
+  function onCode(text){
+    if(!text)return;const now=performance.now();
+    if(text===duplicateGuard.code&&now<duplicateGuard.until)return;duplicateGuard={code:text,until:now+1500};
+    barcodeInp.value=text;showProductInfo(text);
+    try{beep.currentTime=0;beep.play();}catch(_){} if(navigator.vibrate)navigator.vibrate(30);
+    if(state.singleShot){stop();btnScanOnce.disabled=true;btnScanOnce.textContent='Okundu ✓';setTimeout(()=>{btnScanOnce.disabled=false;btnScanOnce.textContent='👉 Tek Okut';},900);state.singleShot=false;}
+  }
+  function fpsCounter(){let last=performance.now();const tick=()=>{if(!state.scanning)return;const now=performance.now();if(now-last>=1000){fpsEl.textContent='FPS: '+frames;frames=0;last=now;}requestAnimationFrame(tick);};tick();}
+
+  // ==== ÜRÜN VERİSİ — SADECE DOSYA ====
+  document.getElementById('btnClearMap').onclick=()=>{productMap={};localStorage.removeItem('productMap');mapStat.textContent='0 ürün yüklü';showProductInfo('');};
+  productFile.onchange=async(e)=>{
+    const file=e.target.files?.[0];if(!file)return;
+    let txt='';try{txt=await file.text();}catch{alert('Dosya okunamadı.');return;}
+    loadProductText(txt,file.name||'dosya');
+  };
+  function loadProductText(txt,src='metin'){
+    try{
+      let map={};
+      if(txt.startsWith('<SIGNATURE=GNDPLU.GDF>')) map=parseGDF(txt);
+      else if(txt.trim().startsWith('{')){
+        const obj=JSON.parse(txt);for(const [k,v] of Object.entries(obj)){if(typeof v==='string')map[k]={name:v,price:''};else map[k]={name:v.name||'',price:v.price||''};}
+      }else map=parseCSV(txt);
+      const count=Object.keys(map).length;
+      if(count===0){const first=(txt.split(/\r?\n/)[0]||'').slice(0,120);alert(`0 ürün bulundu (${src}). İlk satır: "${first}"`);return;}
+      productMap=map;localStorage.setItem('productMap',JSON.stringify(productMap));mapStat.textContent=count+' ürün yüklü';showProductInfo(barcodeInp.value.trim());
+      alert(`${count} ürün yüklendi (${src}).`);
+    }catch(err){console.error(err);alert('Veri çözümlenemedi. CSV/TXT (barkod;isim;fiyat), JSON veya imzalı GDF kullanın.');}
+  }
+  // CSV/TXT: barkod;isim;fiyat
+  function parseCSV(txt){
+    const lines=txt.split(/\r?\n/).filter(x=>x.trim().length);
+    const sep=lines[0]?.includes(';')?';':',';
+    const map={};
+    for(const L of lines){
+      const cols=L.split(sep).map(s=>s.trim());
+      if(cols.length>=2){
+        const bc=cols[0].replace(/\s+/g,''); // boşlukları at
+        const name=cols[1];
+        let price=(cols[2]||'').replace(/\s/g,'');
+        if(/^\d{1,3}(?:,\d{3})*\.\d{2}$/.test(price))price=price.replace(/,/g,'').replace(/\./,',');
+        if(/^\d{1,3}(?:\.\d{3})*,\d{2}$/.test(price))price=price.replace(/\./g,'');
+        if(/^[0-9]{8,14}$/.test(bc)) map[bc]={name,price};
+      }
+    }
+    return map;
+  }
+  // GDF: 01 (PLU+İsim), 02 (Barkod+Fiyat). EAN-8 de desteklenir.
+  function parseGDF(txt){
+    const lines=txt.split(/\r?\n/);
+    const names={};let lastPLU=null;const map={};
+    const priceRe=/(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})/g;
+    for(const raw of lines){
+      if(!raw)continue;
+      if(raw.startsWith('01')){
+        const parts=raw.trim().split(/\s{2,}/);
+        if(parts.length>=4){lastPLU=parts[1];names[lastPLU]=parts[3];}
+      }else if(raw.startsWith('02')){
+        // fiyat
+        const prices=raw.match(priceRe)||[];let price=prices.length?prices[prices.length-1]:'';
+        price=price.replace(/\./g,'');
+        if(/^1001\d+,\d{2}$/.test(price))price=price.slice(4);
+        else if(/^100\d+,\d{2}$/.test(price))price=price.slice(3);
+        if(!/^0,\d{2}$/.test(price))price=price.replace(/^0+(?=\d)/,'');
+        // barkod: 8..14
+        const nums=(raw.match(/\b\d{8,14}\b/g)||[]);
+        // PLU'yu at, en sonda 13/12 varsa onu, yoksa 8'i seç
+        const candidates=nums.filter(n=>n!==lastPLU);
+        let bc=candidates.filter(n=>n.length===13||n.length===12).pop()
+              || candidates.filter(n=>n.length===8).pop()
+              || '';
+        const name=names[lastPLU]||'';
+        if(bc&&name) map[bc]={name,price};
+      }
+    }
+    return map;
+  }
+
+  // ==== OLAYLAR ====
+  document.getElementById('btnStart').onclick=async()=>{await listCameras();start();};
+  document.getElementById('btnStop').onclick=()=>stop();
+  document.getElementById('btnAdd').onclick=()=>{upsert(barcodeInp.value.trim(),qtyInp.value);barcodeInp.value='';qtyInp.value=1;showProductInfo('');};
+  document.getElementById('btnMinus').onclick=()=>{qtyInp.value=Math.max(1,Number(qtyInp.value)-1);};
+  document.getElementById('btnPlus').onclick=()=>{qtyInp.value=Number(qtyInp.value)+1;};
+  document.getElementById('btnClearField').onclick=()=>{barcodeInp.value='';showProductInfo('');};
+  document.getElementById('btnExport').onclick=()=>exportTXT();
+  document.getElementById('btnCSV').onclick=()=>exportCSV();
+  document.getElementById('btnClear').onclick=()=>{if(confirm('Listeyi temizlemek istiyor musun?')){state.items={};save();render();}};
+  document.getElementById('btnUndo').onclick=()=>undo();
+
+  // Elle yazınca da ürün bilgisini göster (EAN-8 dahil)
+  barcodeInp.addEventListener('input',()=>{const code=barcodeInp.value.replace(/\D/g,'');if(code.length>=8)showProductInfo(code);});
+  barcodeInp.addEventListener('blur',()=>{const code=barcodeInp.value.replace(/\D/g,'');if(code)showProductInfo(code);});
+
+  // Tek okuma
+  btnScanOnce.onclick=async()=>{await listCameras();state.singleShot=true;btnScanOnce.disabled=true;btnScanOnce.textContent='Okutuluyor...';if(!state.scanning)await start();else statusEl.textContent='Tek seferlik okuma aktif';};
+
+  // Başlangıç
+  load();listCameras();
+  try{const pm=localStorage.getItem('productMap');if(pm){productMap=JSON.parse(pm);mapStat.textContent=Object.keys(productMap).length+' ürün yüklü';}}catch{}
+</script>
 </body>
 </html>
