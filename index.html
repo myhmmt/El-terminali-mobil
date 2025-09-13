@@ -97,7 +97,7 @@
       </div>
 
       <table>
-        <thead><tr><th>Barkod</th><th class="right">Adet</th><th></th></tr></thead>
+        <thead><tr><th>Barkod</th><th>İsim</th><th class="right">Adet</th><th></th></tr></thead>
         <tbody id="tbody"></tbody>
       </table>
       Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
@@ -150,8 +150,9 @@
       let sum=0;
       Object.entries(state.items).forEach(([c,q])=>{
         sum += Number(q)||0;
+        const name = (productMap[c]?.name) || '—';
         const tr=document.createElement('tr');
-        tr.innerHTML = `<td>${c}</td><td class="right">${q}</td><td><button onclick="del('${c}')">Sil</button></td>`;
+        tr.innerHTML = `<td>${c}</td><td>${name}</td><td class="right">${q}</td><td><button onclick="del('${c}')">Sil</button></td>`;
         tbody.appendChild(tr);
       });
       totalRows.textContent = Object.keys(state.items).length;
@@ -282,45 +283,60 @@
     };
 
     function parseCSV(txt){
-      // Destek: barkod;isim;fiyat  (ayraç ; veya ,)
-      const lines = txt.split(/\r?\n/).filter(x=>x.trim().length);
-      const sep = lines[0].includes(';')? ';' : ',';
+      // Destek: barkod;isim;fiyat (ayraç ; veya ,) — TR (1.234,56) & EN (1,234.56) destekli
+      const lines = txt.split(/\r?\n/).filter(x => x.trim().length);
+      const sep = lines[0].includes(';') ? ';' : ',';
       const map = {};
-      for(const L of lines){
-        const cols = L.split(sep).map(s=>s.trim());
-        if(cols.length>=2){
+      for (const L of lines){
+        const cols = L.split(sep).map(s => s.trim());
+        if (cols.length >= 2){
           const bc = cols[0];
           const name = cols[1];
-          const price = (cols[2]||'');
-          if(/^[0-9]{8,14}$/.test(bc)) map[bc] = {name, price};
+          let price = (cols[2] || '').replace(/\s/g,'');
+
+          // EN 1,234.56 -> 1234,56
+          if (/^\d{1,3}(?:,\d{3})*\.\d{2}$/.test(price)){
+            price = price.replace(/,/g,'').replace(/\./,',');
+          }
+          // TR 1.234,56 -> 1234,56
+          if (/^\d{1,3}(?:\.\d{3})*,\d{2}$/.test(price)){
+            price = price.replace(/\./g,'');
+          }
+
+          if (/^[0-9]{8,14}$/.test(bc)) map[bc] = { name, price };
         }
       }
       return map;
     }
 
     function parseGDF(txt){
-      // Basit GDF ayrıştırma: 01 satırından isim, 02 satırından barkod+fiyat
+      // GDF: 01 -> isim, 02 -> barkod + EN SAĞ satış fiyatı
       const lines = txt.split(/\r?\n/);
       const names = {}; // plu -> name
       const map = {};
       let lastPLU = null;
-      for(const raw of lines){
+      const priceRe = /(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})/g; // 1.234,56 veya 1234,56
+
+      for (const raw of lines){
         const L = raw; if(!L) continue;
-        if(L.startsWith('01')){
+
+        if (L.startsWith('01')){
           const parts = L.trim().split(/\s{2,}/);
-          if(parts.length>=4){ lastPLU = parts[1]; names[lastPLU] = parts[3]; }
-        }else if(L.startsWith('02')){
-          // fiyat
-          const pm = L.match(/(\d+,\d{2})/);
-          let price = pm? pm[1] : '';
-          if(price.startsWith('100') && price.length>=7) price = price.slice(3);
-          while(price.length>4 && price.startsWith('0') && /\d/.test(price[1])) price = price.slice(1);
-          // barkod (12-14 hane, PLU değil)
+          if (parts.length>=4){ lastPLU = parts[1]; names[lastPLU] = parts[3]; }
+        } else if (L.startsWith('02')){
+          // --- fiyat: en sağdaki ---
+          const allPrices = L.match(priceRe) || [];
+          let price = allPrices.length ? allPrices[allPrices.length-1] : '';
+          price = price.replace(/\./g,'');           // binlik noktaları temizle
+          if (/^100\d+,\d{2}$/.test(price)) price = price.slice(3);  // 100-prefiksini at
+          if (!/^0,\d{2}$/.test(price)) price = price.replace(/^0+(?=\d)/,''); // baştaki sıfırlar
+
+          // --- barkod ---
           const nums = L.match(/\b\d{12,14}\b/g) || [];
-          const bcands = nums.filter(n=>n!==lastPLU);
-          const bc = bcands.length? bcands[bcands.length-1] : '';
+          const bc = nums.filter(n => n !== lastPLU).pop() || '';
           const name = names[lastPLU] || '';
-          if(bc && name){ map[bc] = {name, price}; }
+
+          if (bc && name){ map[bc] = { name, price }; }
         }
       }
       return map;
@@ -345,8 +361,11 @@
 
     // ---- Başlangıç
     load(); listCameras();
-    // varsa önceden kaydedilmiş ürün map'i yükle
-    try{ const pm = localStorage.getItem('productMap'); if(pm){ productMap = JSON.parse(pm); mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü'; } }catch{}
+    // varsa daha önce kaydedilmiş ürün verisi
+    try{
+      const pm = localStorage.getItem('productMap');
+      if(pm){ productMap = JSON.parse(pm); mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü'; }
+    }catch{}
   </script>
 </body>
 </html>
