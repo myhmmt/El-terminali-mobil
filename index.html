@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Barkod + Adet → TXT</title>
+  <style>
+    body{font-family:system-ui;margin:0;padding:0;background:#0b1220;color:#fff}
+    header{padding:10px;background:#111a2b;text-align:center}
+    .card{margin:10px;padding:10px;background:#1c2944;border-radius:10px}
+    button{padding:8px 12px;margin:4px;border-radius:8px;border:none;cursor:pointer}
+    button.primary{background:#1677ff;color:#fff}
+    button.good{background:#1fbf75;color:#fff}
+    button.warn{background:#ff5d5d;color:#fff}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{border-bottom:1px solid #333;padding:6px}
+    th{color:#7f8ca8;text-align:left}
+    .right{text-align:right}
+    label{display:block;margin-top:6px;font-size:13px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📦 Barkod + Adet → TXT</h1>
+  </header>
+
+  <div class="card">
+    <label>Kamera Seç:</label>
+    <select id="cameraSelect"></select>
+    <div>
+      <button id="btnStart" class="primary">Kamerayı Başlat</button>
+      <button id="btnStop">Durdur</button>
+      <button id="btnPhoto">Foto ile Tara</button>
+      <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none" />
+    </div>
+    <video id="video" playsinline muted autoplay style="width:100%;max-height:240px;background:#000"></video>
+    <div id="scanStatus">Hazır</div>
+  </div>
+
+  <div class="card">
+    <label>Barkod & Adet</label>
+    <input id="barcode" placeholder="Barkod" style="width:60%" />
+    <input id="qty" type="number" value="1" style="width:20%" />
+    <button id="btnAdd" class="good">Ekle</button>
+
+    <label>Dosya Adı (kaydetmeden önce):</label>
+    <input id="filename" placeholder="sayim" style="width:60%" />
+
+    <div>Format: <code>8697433680118;36</code></div>
+    <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
+    <button id="btnCSV">CSV Olarak Dışa Aktar</button>
+    <button id="btnClear" class="warn">Listeyi Temizle</button>
+
+    <table>
+      <thead>
+        <tr><th>Barkod</th><th class="right">Adet</th><th></th></tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    Toplam: <span id="totalRows">0</span>
+  </div>
+
+  <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
+  <script>
+    const state = {items:{},reader:null,currentDeviceId:null,scanning:false};
+    const selCam=document.getElementById('cameraSelect');
+    const video=document.getElementById('video');
+    const barcodeInp=document.getElementById('barcode');
+    const qtyInp=document.getElementById('qty');
+    const tbody=document.getElementById('tbody');
+    const totalRows=document.getElementById('totalRows');
+    const statusEl=document.getElementById('scanStatus');
+    const photoBtn=document.getElementById('btnPhoto');
+    const photoInput=document.getElementById('photoInput');
+    const filenameInp=document.getElementById('filename');
+
+    function render(){
+      tbody.innerHTML='';
+      const entries=Object.entries(state.items);
+      entries.forEach(([c,q])=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${c}</td><td class='right'>${q}</td><td><button onclick="deleteItem('${c}')">Sil</button></td>`;
+        tbody.appendChild(tr);
+      });
+      totalRows.textContent=entries.length;
+    }
+    function deleteItem(c){delete state.items[c];saveLocal();render();}
+    function upsert(c,q){if(!c)return;const n=Math.max(1,Number(q)||1);state.items[c]=(Number(state.items[c])||0)+n;saveLocal();render();}
+
+    function saveLocal(){localStorage.setItem('barcodeItems',JSON.stringify(state.items));}
+    function loadLocal(){const raw=localStorage.getItem('barcodeItems');if(raw)state.items=JSON.parse(raw);render();}
+
+    function exportTXT(){
+      const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`);
+      const name=(filenameInp.value||'sayim')+".txt";
+      downloadFile(name,lines.join('\\n'),'text/plain');
+    }
+    function exportCSV(){
+      const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)];
+      const name=(filenameInp.value||'sayim')+".csv";
+      downloadFile(name,lines.join('\\n'),'text/csv');
+    }
+    function downloadFile(name,content,type){
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([content],{type:type}));
+      a.download=name;a.click();URL.revokeObjectURL(a.href);
+    }
+
+    async function listCameras(){
+      try{
+        const devices=await ZXingBrowser.BrowserMultiFormatReader.listVideoInputDevices();
+        selCam.innerHTML='';
+        devices.forEach((d,i)=>{
+          const opt=document.createElement('option');opt.value=d.deviceId;opt.textContent=d.label||`Kamera ${i+1}`;selCam.appendChild(opt);
+        });
+        if(devices[0]){state.currentDeviceId=devices[0].deviceId;selCam.value=state.currentDeviceId;}
+      }catch(e){console.warn(e);}
+    }
+
+    async function startScanner(){
+      stopScanner();
+      try{
+        state.reader=new ZXingBrowser.BrowserMultiFormatReader();
+        state.scanning=true;statusEl.textContent='Kamera açılıyor...';
+        const deviceId=state.currentDeviceId||undefined;
+        await state.reader.decodeFromVideoDevice(deviceId,video,(res,err)=>{
+          if(res){barcodeInp.value=res.getText();qtyInp.focus();}
+        });
+        statusEl.textContent='Tarama aktif';
+      }catch(e){
+        statusEl.textContent='Tarama başlatılamadı';
+      }
+    }
+    function stopScanner(){if(state.reader){state.reader.reset();}state.scanning=false;statusEl.textContent='Durduruldu';}
+
+    document.getElementById('btnStart').onclick=async()=>{await listCameras();startScanner();};
+    document.getElementById('btnStop').onclick=()=>stopScanner();
+    document.getElementById('btnAdd').onclick=()=>{upsert(barcodeInp.value.trim(),qtyInp.value);barcodeInp.value='';qtyInp.value=1;};
+    document.getElementById('btnExport').onclick=()=>exportTXT();
+    document.getElementById('btnCSV').onclick=()=>exportCSV();
+    document.getElementById('btnClear').onclick=()=>{if(confirm('Listeyi temizlemek istiyor musun?')){state.items={};saveLocal();render();}};
+
+    // Foto ile Tara
+    photoBtn.onclick=()=>photoInput.click();
+    photoInput.onchange=async(e)=>{
+      const file=e.target.files&&e.target.files[0];
+      if(!file)return;
+      try{
+        statusEl.textContent='Fotoğraftan okuma...';
+        const url=URL.createObjectURL(file);
+        const reader=new ZXingBrowser.BrowserMultiFormatReader();
+        const result=await reader.decodeFromImageUrl(url);
+        URL.revokeObjectURL(url);
+        if(result){barcodeInp.value=result.getText();qtyInp.focus();statusEl.textContent='Fotoğraftan okundu';}
+        else{statusEl.textContent='Barkod bulunamadı';}
+      }catch(err){statusEl.textContent='Okunamadı';}
+      finally{photoInput.value='';}
+    };
+
+    loadLocal();
+    listCameras();
+  </script>
+</body>
+</html>
