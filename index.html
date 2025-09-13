@@ -203,7 +203,8 @@
       const now=performance.now();
       if(text===duplicateGuard.code && now<duplicateGuard.until) return;
       duplicateGuard={code:text,until:now+1500};
-      barcodeInp.value=text; qtyInp.focus();
+      // sadece barkod alanını doldur (klavye açma yok)
+      barcodeInp.value=text;
       try{ beep.currentTime=0; beep.play(); }catch(_){} 
       if(navigator.vibrate) navigator.vibrate(30);
       if(state.singleShot){ stop(); btnScanOnce.disabled=true; btnScanOnce.textContent='Okundu ✓'; setTimeout(()=>{btnScanOnce.disabled=false; btnScanOnce.textContent='👉 Okut (Tek Sefer)';},1000); state.singleShot=false; }
@@ -218,7 +219,7 @@
     // UI
     document.getElementById('btnStart').onclick = async()=>{ await listCameras(); start(); };
     document.getElementById('btnStop').onclick  = ()=> stop();
-    document.getElementById('btnAdd').onclick   = ()=>{ upsert(barcodeInp.value.trim(), qtyInp.value); barcodeInp.value=''; qtyInp.value=1; barcodeInp.focus(); };
+    document.getElementById('btnAdd').onclick   = ()=>{ upsert(barcodeInp.value.trim(), qtyInp.value); barcodeInp.value=''; qtyInp.value=1; };
     document.getElementById('btnMinus').onclick = ()=>{ qtyInp.value=Math.max(1, Number(qtyInp.value)-1); };
     document.getElementById('btnPlus').onclick  = ()=>{ qtyInp.value=Number(qtyInp.value)+1; };
     document.getElementById('btnClearField').onclick = ()=>{ barcodeInp.value=''; };
