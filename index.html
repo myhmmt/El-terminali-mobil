@@ -12,10 +12,10 @@
     *{box-sizing:border-box}
     body{font-family:system-ui;margin:0;background:var(--bg);color:var(--text)}
     header{padding:14px 10px;background:linear-gradient(90deg,var(--accent2), var(--accent));}
-    header .titles{max-width:880px;margin:auto;color:#fff}
+    header .titles{max-width:980px;margin:auto;color:#fff}
     header .h1{margin:0;font-size:20px;font-weight:700}
     header .sub{margin:0;font-size:13px;opacity:.95}
-    .wrap{max-width:880px;margin:auto}
+    .wrap{max-width:980px;margin:auto}
     .card{margin:10px;padding:12px;background:var(--card);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.08)}
     button{padding:8px 12px;margin:4px;border-radius:10px;border:none;cursor:pointer;font-weight:600}
     .primary{background:var(--accent);color:#fff}
@@ -36,6 +36,9 @@
     .status{margin-top:6px}
     .chip{display:inline-block;background:#eee;color:#333;border:1px solid #ccc;padding:2px 8px;border-radius:999px;font-size:12px}
     .qtybtn{padding:6px 10px;border:1px solid #ccd;background:#fff;border-radius:8px;cursor:pointer}
+    .pname{font-weight:700;color:#0b7a2a}
+    .pprice{font-weight:700;color:#a14c00}
+    input[type="file"]{background:#fff;border:1px solid #ccc;border-radius:8px;padding:6px}
   </style>
 </head>
 <body>
@@ -82,6 +85,8 @@
         <button id="btnUndo">Geri Al</button>
       </div>
 
+      <div class="muted">Ürün: <span id="productName" class="pname">—</span> · Fiyat: <span id="productPrice" class="pprice">—</span></div>
+
       <label>Dosya Adı:</label>
       <input id="filename" placeholder="sayim" style="width:60%" />
 
@@ -98,16 +103,30 @@
       Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
     </div>
 
+    <!-- Ürün verisi yükle -->
+    <div class="card">
+      <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle (opsiyonel)</h3>
+      <div class="muted">GDF/TXT (ERP çıktın) veya CSV/JSON yükleyebilirsin. CSV: <code>barkod;isim;fiyat</code></div>
+      <div class="row">
+        <input id="productFile" type="file" accept=".gdf,.txt,.csv,.json" />
+        <button id="btnClearMap">Ürün Verisini Temizle</button>
+        <span class="chip" id="mapStat">0 ürün yüklü</span>
+      </div>
+    </div>
+
     <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
   </div>
 
   <script>
+    // ---- Durum
     const state = { items:{}, scanning:false, currentDeviceId:null, singleShot:false };
     let mediaStream=null, rafId=null, frames=0;
     let duplicateGuard = { code:null, until:0 };
     let lastOp = null;
     let detector=null, off=null, octx=null;
+    let productMap = {}; // { barcode: {name, price} }
 
+    // ---- UI
     const selCam = document.getElementById('cameraSelect');
     const video  = document.getElementById('video');
     const statusEl = document.getElementById('scanStatus');
@@ -120,7 +139,12 @@
     const filenameInp = document.getElementById('filename');
     const beep = document.getElementById('beep');
     const btnScanOnce = document.getElementById('btnScanOnce');
+    const productNameEl = document.getElementById('productName');
+    const productPriceEl= document.getElementById('productPrice');
+    const productFile   = document.getElementById('productFile');
+    const mapStat       = document.getElementById('mapStat');
 
+    // ---- Liste
     function render(){
       tbody.innerHTML='';
       let sum=0;
@@ -139,10 +163,12 @@
     function save(){ localStorage.setItem('barcodeItems', JSON.stringify(state.items)); }
     function load(){ const raw=localStorage.getItem('barcodeItems'); if(raw){ try{state.items=JSON.parse(raw);}catch{} } render(); }
 
+    // ---- Dışa aktar
     function dl(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
-    function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((filenameInp.value||'sayim')+'.txt', lines.join('\\n'), 'text/plain'); }
-    function exportCSV(){ const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)]; dl((filenameInp.value||'sayim')+'.csv', lines.join('\\n'), 'text/csv'); }
+    function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((filenameInp.value||'sayim')+'.txt', lines.join('\n'), 'text/plain'); }
+    function exportCSV(){ const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)]; dl((filenameInp.value||'sayim')+'.csv', lines.join('\n'), 'text/csv'); }
 
+    // ---- Kamera
     async function listCameras(){
       try{
         const devices = await navigator.mediaDevices.enumerateDevices();
@@ -203,10 +229,21 @@
       const now=performance.now();
       if(text===duplicateGuard.code && now<duplicateGuard.until) return;
       duplicateGuard={code:text,until:now+1500};
-      // sadece barkod alanını doldur (klavye açma yok)
+      // sadece barkod alanını doldur (klavye açmadan)
       barcodeInp.value=text;
       try{ beep.currentTime=0; beep.play(); }catch(_){} 
       if(navigator.vibrate) navigator.vibrate(30);
+
+      // Ürün adı & fiyat göster
+      const p = productMap[text];
+      if(p){
+        productNameEl.textContent = p.name || '—';
+        productPriceEl.textContent = p.price || '—';
+      }else{
+        productNameEl.textContent = 'Bulunamadı';
+        productPriceEl.textContent = '—';
+      }
+
       if(state.singleShot){ stop(); btnScanOnce.disabled=true; btnScanOnce.textContent='Okundu ✓'; setTimeout(()=>{btnScanOnce.disabled=false; btnScanOnce.textContent='👉 Okut (Tek Sefer)';},1000); state.singleShot=false; }
     }
 
@@ -216,13 +253,86 @@
       tick();
     }
 
-    // UI
+    // ---- Ürün dosyası yükleme
+    document.getElementById('btnClearMap').onclick = ()=>{ productMap={}; localStorage.removeItem('productMap'); mapStat.textContent='0 ürün yüklü'; productNameEl.textContent='—'; productPriceEl.textContent='—'; };
+    productFile.onchange = async (e)=>{
+      const file = e.target.files?.[0]; if(!file) return;
+      const txt = await file.text();
+      const ext = (file.name.split('.').pop()||'').toLowerCase();
+      try{
+        if(txt.startsWith('<SIGNATURE=GNDPLU.GDF>')){
+          productMap = parseGDF(txt);
+        }else if(ext==='json'){
+          const obj = JSON.parse(txt);
+          productMap = {};
+          for(const [k,v] of Object.entries(obj)){
+            if(typeof v === 'string') productMap[k] = {name:v, price:''};
+            else productMap[k] = {name:v.name||'', price:v.price||''};
+          }
+        }else{ // csv / txt
+          productMap = parseCSV(txt);
+        }
+        localStorage.setItem('productMap', JSON.stringify(productMap));
+        mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü';
+        alert('Ürün verisi yüklendi');
+      }catch(err){
+        console.error(err);
+        alert('Dosya okunamadı. Lütfen GDF/CSV/JSON formatında deneyin.');
+      }
+    };
+
+    function parseCSV(txt){
+      // Destek: barkod;isim;fiyat  (ayraç ; veya ,)
+      const lines = txt.split(/\r?\n/).filter(x=>x.trim().length);
+      const sep = lines[0].includes(';')? ';' : ',';
+      const map = {};
+      for(const L of lines){
+        const cols = L.split(sep).map(s=>s.trim());
+        if(cols.length>=2){
+          const bc = cols[0];
+          const name = cols[1];
+          const price = (cols[2]||'');
+          if(/^[0-9]{8,14}$/.test(bc)) map[bc] = {name, price};
+        }
+      }
+      return map;
+    }
+
+    function parseGDF(txt){
+      // Basit GDF ayrıştırma: 01 satırından isim, 02 satırından barkod+fiyat
+      const lines = txt.split(/\r?\n/);
+      const names = {}; // plu -> name
+      const map = {};
+      let lastPLU = null;
+      for(const raw of lines){
+        const L = raw; if(!L) continue;
+        if(L.startsWith('01')){
+          const parts = L.trim().split(/\s{2,}/);
+          if(parts.length>=4){ lastPLU = parts[1]; names[lastPLU] = parts[3]; }
+        }else if(L.startsWith('02')){
+          // fiyat
+          const pm = L.match(/(\d+,\d{2})/);
+          let price = pm? pm[1] : '';
+          if(price.startsWith('100') && price.length>=7) price = price.slice(3);
+          while(price.length>4 && price.startsWith('0') && /\d/.test(price[1])) price = price.slice(1);
+          // barkod (12-14 hane, PLU değil)
+          const nums = L.match(/\b\d{12,14}\b/g) || [];
+          const bcands = nums.filter(n=>n!==lastPLU);
+          const bc = bcands.length? bcands[bcands.length-1] : '';
+          const name = names[lastPLU] || '';
+          if(bc && name){ map[bc] = {name, price}; }
+        }
+      }
+      return map;
+    }
+
+    // ---- Olaylar
     document.getElementById('btnStart').onclick = async()=>{ await listCameras(); start(); };
     document.getElementById('btnStop').onclick  = ()=> stop();
-    document.getElementById('btnAdd').onclick   = ()=>{ upsert(barcodeInp.value.trim(), qtyInp.value); barcodeInp.value=''; qtyInp.value=1; };
+    document.getElementById('btnAdd').onclick   = ()=>{ upsert(barcodeInp.value.trim(), qtyInp.value); barcodeInp.value=''; qtyInp.value=1; productNameEl.textContent='—'; productPriceEl.textContent='—'; };
     document.getElementById('btnMinus').onclick = ()=>{ qtyInp.value=Math.max(1, Number(qtyInp.value)-1); };
     document.getElementById('btnPlus').onclick  = ()=>{ qtyInp.value=Number(qtyInp.value)+1; };
-    document.getElementById('btnClearField').onclick = ()=>{ barcodeInp.value=''; };
+    document.getElementById('btnClearField').onclick = ()=>{ barcodeInp.value=''; productNameEl.textContent='—'; productPriceEl.textContent='—'; };
     document.getElementById('btnExport').onclick= ()=> exportTXT();
     document.getElementById('btnCSV').onclick   = ()=> exportCSV();
     document.getElementById('btnClear').onclick = ()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; save(); render(); } };
@@ -233,7 +343,10 @@
 
     btnScanOnce.onclick = async ()=>{ await listCameras(); state.singleShot = true; btnScanOnce.disabled = true; btnScanOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
 
+    // ---- Başlangıç
     load(); listCameras();
+    // varsa önceden kaydedilmiş ürün map'i yükle
+    try{ const pm = localStorage.getItem('productMap'); if(pm){ productMap = JSON.parse(pm); mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü'; } }catch{}
   </script>
 </body>
 </html>
