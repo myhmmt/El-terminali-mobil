@@ -19,7 +19,6 @@
     label{display:block;margin-top:6px;font-size:13px}
     .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
     .hint{font-size:12px;color:#ffd27b;margin-top:6px}
-    input[type="range"]{vertical-align:middle}
   </style>
 </head>
 <body>
@@ -33,7 +32,6 @@
     <div class="row">
       <button id="btnStart" class="primary">Kamerayı Başlat</button>
       <button id="btnStop">Durdur</button>
-      <button id="btnTorch">Fener</button>
       <label>Yakınlaştırma:
         <input id="zoom" type="range" min="1" max="5" step="0.1" value="1">
       </label>
@@ -46,7 +44,7 @@
     <video id="video" playsinline muted autoplay style="width:100%;max-height:260px;background:#000;border-radius:8px"></video>
     <div id="scanStatus">Hazır</div>
     <div class="hint">
-      İpucu: Netlik için barkodu kadrajın %60-80’ini kaplayacak şekilde tut, ışığı artır. Fener ve zoom’u kullanabilirsin.
+      İpucu: Netlik için barkodu kadrajın %60-80’ini kaplayacak şekilde tut, ışığı artır. Zoom'u kullanabilirsin.
     </div>
   </div>
 
@@ -77,219 +75,96 @@
     Toplam: <span id="totalRows">0</span>
   </div>
 
-  <!-- ZXing (tarayıcı kütüphanesi) -->
+  <!-- ZXing kütüphanesi -->
   <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
 
   <!-- Bip sesi -->
   <audio id="beep" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
 
   <script>
-    // ---- Durum & Elemanlar
     const state = {items:{}, reader:null, currentDeviceId:null, scanning:false};
-    let mediaStream = null;   // torch/zoom için stream
-    let videoTrack  = null;   // torch/zoom için video track
+    let mediaStream = null; let videoTrack=null;
 
-    const selCam = document.getElementById('cameraSelect');
-    const video = document.getElementById('video');
-    const barcodeInp = document.getElementById('barcode');
-    const qtyInp = document.getElementById('qty');
-    const tbody = document.getElementById('tbody');
-    const totalRows = document.getElementById('totalRows');
-    const statusEl = document.getElementById('scanStatus');
-    const photoBtn = document.getElementById('btnPhoto');
-    const photoInput = document.getElementById('photoInput');
-    const filenameInp = document.getElementById('filename');
-    const zoomSlider = document.getElementById('zoom');
-    const torchBtn = document.getElementById('btnTorch');
-    const beepAudio = document.getElementById('beep');
-    const beepOn = document.getElementById('beepOn');
+    const selCam=document.getElementById('cameraSelect');
+    const video=document.getElementById('video');
+    const barcodeInp=document.getElementById('barcode');
+    const qtyInp=document.getElementById('qty');
+    const tbody=document.getElementById('tbody');
+    const totalRows=document.getElementById('totalRows');
+    const statusEl=document.getElementById('scanStatus');
+    const photoBtn=document.getElementById('btnPhoto');
+    const photoInput=document.getElementById('photoInput');
+    const filenameInp=document.getElementById('filename');
+    const zoomSlider=document.getElementById('zoom');
+    const beepAudio=document.getElementById('beep');
+    const beepOn=document.getElementById('beepOn');
 
-    // ---- Liste render/sakla
     function render(){
       tbody.innerHTML='';
-      const entries = Object.entries(state.items);
-      entries.forEach(([c,q])=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${c}</td><td class='right'>${q}</td>
-                        <td class='right'><button onclick="deleteItem('${c}')">Sil</button></td>`;
+      Object.entries(state.items).forEach(([c,q])=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${c}</td><td class='right'>${q}</td>
+                      <td><button onclick=\"deleteItem('${c}')\">Sil</button></td>`;
         tbody.appendChild(tr);
       });
-      totalRows.textContent = entries.length;
+      totalRows.textContent=Object.keys(state.items).length;
     }
-    function deleteItem(c){ delete state.items[c]; saveLocal(); render(); }
-    function upsert(c,q){
-      if(!c) return;
-      const n = Math.max(1, Number(q)||1);
-      state.items[c] = (Number(state.items[c])||0) + n;
-      saveLocal(); render();
-    }
-    function saveLocal(){ localStorage.setItem('barcodeItems', JSON.stringify(state.items)); }
-    function loadLocal(){
-      const raw = localStorage.getItem('barcodeItems');
-      if(raw){ try{ state.items = JSON.parse(raw); }catch(_){} }
-      render();
-    }
+    function deleteItem(c){delete state.items[c];saveLocal();render();}
+    function upsert(c,q){if(!c)return;const n=Math.max(1,Number(q)||1);state.items[c]=(Number(state.items[c])||0)+n;saveLocal();render();}
+    function saveLocal(){localStorage.setItem('barcodeItems',JSON.stringify(state.items));}
+    function loadLocal(){const raw=localStorage.getItem('barcodeItems');if(raw)state.items=JSON.parse(raw);render();}
 
-    // ---- Dışa aktar
-    function downloadFile(name, content, type){
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([content], {type:type}));
-      a.download = name; a.click(); URL.revokeObjectURL(a.href);
+    function downloadFile(name,content,type){
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([content],{type:type}));
+      a.download=name;a.click();URL.revokeObjectURL(a.href);
     }
-    function exportTXT(){
-      const lines = Object.entries(state.items).map(([c,q])=>`${c};${q}`);
-      const name = (filenameInp.value || 'sayim') + ".txt";
-      downloadFile(name, lines.join('\n'), 'text/plain');
-    }
-    function exportCSV(){
-      const lines = ['barcode,qty', ...Object.entries(state.items).map(([c,q])=>`${c},${q}`)];
-      const name = (filenameInp.value || 'sayim') + ".csv";
-      downloadFile(name, lines.join('\n'), 'text/csv');
-    }
+    function exportTXT(){const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`);const name=(filenameInp.value||'sayim')+'.txt';downloadFile(name,lines.join('\\n'),'text/plain');}
+    function exportCSV(){const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)];const name=(filenameInp.value||'sayim')+'.csv';downloadFile(name,lines.join('\\n'),'text/csv');}
 
-    // ---- Kamera listesi
     async function listCameras(){
-      try{
-        const devices = await ZXingBrowser.BrowserMultiFormatReader.listVideoInputDevices();
-        selCam.innerHTML = '';
-        devices.forEach((d,i)=>{
-          const opt = document.createElement('option');
-          opt.value = d.deviceId;
-          opt.textContent = d.label || `Kamera ${i+1}`;
-          selCam.appendChild(opt);
-        });
-        // Arka kamerayı bulmaya çalış
-        const rear = devices.find(d=>/back|rear|arka/i.test(d.label||''));
-        state.currentDeviceId = (rear ? rear.deviceId : (devices[0]?.deviceId || null));
-        if(state.currentDeviceId) selCam.value = state.currentDeviceId;
-      }catch(e){ console.warn(e); }
+      const devices=await ZXingBrowser.BrowserMultiFormatReader.listVideoInputDevices();
+      selCam.innerHTML='';
+      devices.forEach((d,i)=>{const opt=document.createElement('option');opt.value=d.deviceId;opt.textContent=d.label||`Kamera ${i+1}`;selCam.appendChild(opt);});
+      const rear=devices.find(d=>/back|rear|arka/i.test(d.label||''));state.currentDeviceId=(rear?rear.deviceId:(devices[0]?.deviceId||null));
+      if(state.currentDeviceId)selCam.value=state.currentDeviceId;
     }
-    selCam.onchange = ()=>{ state.currentDeviceId = selCam.value; if(state.scanning){ startScanner(); } };
+    selCam.onchange=()=>{state.currentDeviceId=selCam.value;if(state.scanning){startScanner();}};
 
-    // ---- Tarayıcı başlat (gelişmiş ayarlar + sürekli çözüm)
     async function startScanner(){
       stopScanner();
       try{
-        // Kamera akışını (arka + 720p hedef) başlat
-        const constraints = {
-          video: {
-            deviceId: state.currentDeviceId ? { exact: state.currentDeviceId } : undefined,
-            facingMode: state.currentDeviceId ? undefined : { ideal: "environment" },
-            width: { ideal: 1280 }, height: { ideal: 720 },
-            focusMode: "continuous" // bazı cihazlar desteklemeyebilir
-          },
-          audio: false
-        };
-        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = mediaStream;
-        await video.play();
-        videoTrack = mediaStream.getVideoTracks()[0];
-
-        // ZXing sürekli okuma
-        state.reader = new ZXingBrowser.BrowserMultiFormatReader();
-
-        // (İsteğe bağlı) yaygın format ipuçları (performans için)
-        try{
-          const formats = [
-            ZXingBrowser.BarcodeFormat.EAN_13,
-            ZXingBrowser.BarcodeFormat.EAN_8,
-            ZXingBrowser.BarcodeFormat.CODE_128,
-            ZXingBrowser.BarcodeFormat.CODE_39,
-            ZXingBrowser.BarcodeFormat.ITF
-          ];
-          state.reader.hints = new Map([[ZXingBrowser.DecodeHintType.POSSIBLE_FORMATS, formats]]);
-        }catch(_){/* sürüm desteklemese de sorun değil */ }
-
-        state.scanning = true;
-        statusEl.textContent = 'Tarama aktif';
-
-        await state.reader.decodeFromVideoElementContinuously(
-          video,
-          (result, err) => {
-            if (result) {
-              barcodeInp.value = result.getText();
-              qtyInp.focus();
-              if(beepOn.checked){ beepAudio.currentTime = 0; beepAudio.play().catch(()=>{}); }
-            }
-            // err gelmesi normal; ZXing sürekli dener
-          }
-        );
-      }catch(e){
-        console.warn(e);
-        statusEl.textContent = 'Tarama başlatılamadı';
-      }
+        mediaStream=await navigator.mediaDevices.getUserMedia({
+          video:{deviceId: state.currentDeviceId?{exact:state.currentDeviceId}:undefined,facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},
+          audio:false
+        });
+        video.srcObject=mediaStream;await video.play();
+        videoTrack=mediaStream.getVideoTracks()[0];
+        state.reader=new ZXingBrowser.BrowserMultiFormatReader();
+        state.scanning=true;statusEl.textContent='Tarama aktif';
+        await state.reader.decodeFromVideoElementContinuously(video,(result,err)=>{
+          if(result){barcodeInp.value=result.getText();qtyInp.focus();if(beepOn.checked){beepAudio.currentTime=0;beepAudio.play().catch(()=>{});}}
+        });
+      }catch(e){console.warn(e);statusEl.textContent='Tarama başlatılamadı';}
     }
+    function stopScanner(){try{state.reader?.reset();}catch(_){ }if(mediaStream){mediaStream.getTracks().forEach(t=>t.stop());}mediaStream=null;videoTrack=null;state.scanning=false;statusEl.textContent='Durduruldu';}
 
-    // ---- Durdur (akışı kapat)
-    function stopScanner(){
-      try{ state.reader?.reset(); }catch(_){}
-      if(mediaStream){
-        mediaStream.getTracks().forEach(t=>t.stop());
-      }
-      mediaStream = null; videoTrack = null;
-      state.scanning = false;
-      statusEl.textContent = 'Durduruldu';
-    }
+    zoomSlider.oninput=async()=>{if(!videoTrack)return;const caps=videoTrack.getCapabilities?.();if(caps?.zoom){const v=Math.min(caps.zoom.max,Math.max(caps.zoom.min,Number(zoomSlider.value)));try{await videoTrack.applyConstraints({advanced:[{zoom:v}]});}catch(_){}}};
 
-    // ---- Fener
-    document.getElementById('btnTorch').onclick = async ()=>{
-      if(!videoTrack){ statusEl.textContent='Fener: kamera açık değil'; return; }
-      const caps = videoTrack.getCapabilities?.();
-      if(caps && caps.torch){
-        const s = videoTrack.getSettings?.();
-        const isOn = s?.torch === true;
-        try{
-          await videoTrack.applyConstraints({ advanced: [{ torch: !isOn }] });
-          statusEl.textContent = 'Fener: ' + (!isOn ? 'Açık' : 'Kapalı');
-        }catch(e){ statusEl.textContent='Fener ayarlanamadı'; }
-      }else{
-        statusEl.textContent='Fener bu cihazda desteklenmiyor';
-      }
-    };
+    photoBtn.onclick=()=>photoInput.click();
+    photoInput.onchange=async(e)=>{const file=e.target.files&&e.target.files[0];if(!file)return;try{statusEl.textContent='Fotoğraftan okuma...';const url=URL.createObjectURL(file);const reader=new ZXingBrowser.BrowserMultiFormatReader();const result=await reader.decodeFromImageUrl(url);URL.revokeObjectURL(url);if(result){barcodeInp.value=result.getText();qtyInp.focus();statusEl.textContent='Fotoğraftan okundu';if(beepOn.checked){beepAudio.currentTime=0;beepAudio.play().catch(()=>{});}}else{statusEl.textContent='Barkod bulunamadı';}}catch(err){statusEl.textContent='Okunamadı';}finally{photoInput.value='';}};
 
-    // ---- Zoom
-    document.getElementById('zoom').oninput = async ()=>{
-      if(!videoTrack) return;
-      const caps = videoTrack.getCapabilities?.();
-      if(caps?.zoom){
-        const v = Math.min(caps.zoom.max, Math.max(caps.zoom.min, Number(zoom.value)));
-        try{ await videoTrack.applyConstraints({ advanced: [{ zoom: v }] }); }
-        catch(_){}
-      }
-    };
+    document.getElementById('btnStart').onclick=async()=>{await listCameras();startScanner();};
+    document.getElementById('btnStop').onclick=()=>stopScanner();
+    document.getElementById('btnAdd').onclick=()=>{upsert(barcodeInp.value.trim(),qtyInp.value);barcodeInp.value='';qtyInp.value=1;barcodeInp.focus();};
+    document.getElementById('btnExport').onclick=()=>exportTXT();
+    document.getElementById('btnCSV').onclick=()=>exportCSV();
+    document.getElementById('btnClear').onclick=()=>{if(confirm('Listeyi temizlemek istiyor musun?')){state.items={};saveLocal();render();}};
 
-    // ---- Foto ile Tara (fallback)
-    photoBtn.onclick = ()=> photoInput.click();
-    photoInput.onchange = async (e)=>{
-      const file = e.target.files && e.target.files[0];
-      if(!file) return;
-      try{
-        statusEl.textContent = 'Fotoğraftan okuma...';
-        const url = URL.createObjectURL(file);
-        const reader = new ZXingBrowser.BrowserMultiFormatReader();
-        const result = await reader.decodeFromImageUrl(url);
-        URL.revokeObjectURL(url);
-        if(result){ barcodeInp.value = result.getText(); qtyInp.focus(); statusEl.textContent='Fotoğraftan okundu'; if(beepOn.checked){ beepAudio.currentTime=0; beepAudio.play().catch(()=>{});} }
-        else{ statusEl.textContent='Barkod bulunamadı'; }
-      }catch(err){ statusEl.textContent='Okunamadı'; }
-      finally{ photoInput.value=''; }
-    };
+    barcodeInp.addEventListener('keydown',e=>{if(e.key==='Enter'){document.getElementById('btnAdd').click();}});
+    qtyInp.addEventListener('keydown',e=>{if(e.key==='Enter'){document.getElementById('btnAdd').click();}});
 
-    // ---- Butonlar
-    document.getElementById('btnStart').onclick = async()=>{ await listCameras(); startScanner(); };
-    document.getElementById('btnStop').onclick  = ()=> stopScanner();
-    document.getElementById('btnAdd').onclick   = ()=>{ upsert(barcodeInp.value.trim(), qtyInp.value); barcodeInp.value=''; qtyInp.value=1; barcodeInp.focus(); };
-    document.getElementById('btnExport').onclick= ()=> exportTXT();
-    document.getElementById('btnCSV').onclick   = ()=> exportCSV();
-    document.getElementById('btnClear').onclick = ()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; saveLocal(); render(); } };
-
-    // ---- Kısayollar
-    barcodeInp.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ document.getElementById('btnAdd').click(); } });
-    qtyInp.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ document.getElementById('btnAdd').click(); } });
-
-    // ---- Başlat
-    loadLocal();
-    listCameras();
+    loadLocal();listCameras();
   </script>
 </body>
 </html>
