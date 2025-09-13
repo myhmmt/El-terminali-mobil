@@ -3,63 +3,50 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Genç Gross Mobil Terminal — Barkod + Adet → TXT</title>
+  <title>Genç Gross Mobil Terminal</title>
   <style>
     :root{
-      --bg:#ffffff; --card:#f7f9fc; --text:#1a1a1a; --muted:#555;
-      --accent:#1C2AAE; --accent2:#F0552C; --ok:#1fbf75; --warn:#ff5d5d;
+      --bg:#ffffff;
+      --card:#f4f7ff;
+      --text:#002060;
+      --muted:#666;
+      --accent:#ff6a00;
+      --ok:#1fbf75;
+      --warn:#ff5d5d;
     }
-    *{box-sizing:border-box}
     body{font-family:system-ui;margin:0;background:var(--bg);color:var(--text)}
-    header{padding:14px 10px;background:linear-gradient(90deg,var(--accent2), var(--accent));}
-    header .titles{max-width:980px;margin:auto;color:#fff}
-    header .h1{margin:0;font-size:20px;font-weight:700}
-    header .sub{margin:0;font-size:13px;opacity:.95}
-    .wrap{max-width:980px;margin:auto}
-    .card{margin:10px;padding:12px;background:var(--card);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.08)}
-    button{padding:8px 12px;margin:4px;border-radius:10px;border:none;cursor:pointer;font-weight:600}
+    header{padding:12px;background:var(--accent);text-align:center;color:#fff;font-weight:bold}
+    .wrap{max-width:880px;margin:auto;padding:10px}
+    .card{margin:10px;padding:10px;background:var(--card);border-radius:12px}
+    button{padding:6px 10px;margin:2px;border-radius:8px;border:none;cursor:pointer}
     .primary{background:var(--accent);color:#fff}
-    .secondary{background:var(--accent2);color:#fff}
-    .good{background:var(--accent2);color:#fff}
+    .good{background:var(--ok);color:#fff}
     .warn{background:var(--warn);color:#fff}
-    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    .right{text-align:right}
+    .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}
     label{font-size:13px}
     table{width:100%;border-collapse:collapse;margin-top:10px}
     th,td{border-bottom:1px solid #ccc;padding:6px}
-    th{color:#333;text-align:left}
+    th{color:#444;text-align:left;background:#eee}
+    .right{text-align:right}
     .muted{color:var(--muted);font-size:12px}
     .videoBox{position:relative;border-radius:12px;overflow:hidden;background:#000}
-    video{display:block;width:100%;max-height:320px}
+    video{display:block;width:100%;max-height:300px}
     .roi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-    .roi:after{content:""; width:68%; height:32%; border:2px solid rgba(255,255,255,.85); border-radius:10px; box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
-    .status{margin-top:6px}
-    .chip{display:inline-block;background:#eee;color:#333;border:1px solid #ccc;padding:2px 8px;border-radius:999px;font-size:12px}
-    .qtybtn{padding:6px 10px;border:1px solid #ccd;background:#fff;border-radius:8px;cursor:pointer}
-    .pname{font-weight:700;color:#0b7a2a}
-    .pprice{font-weight:700;color:#a14c00}
-    input[type="file"]{background:#fff;border:1px solid #ccc;border-radius:8px;padding:6px}
+    .roi:after{content:""; width:70%; height:30%; border:2px solid rgba(255,255,255,.8); border-radius:8px}
+    .chip{display:inline-block;background:#ddd;color:#333;padding:2px 8px;border-radius:999px;font-size:12px;margin-right:4px}
   </style>
 </head>
 <body>
-  <header>
-    <div class="titles">
-      <div class="h1">Genç Gross Mobil Terminal</div>
-      <div class="sub">📦 Barkod + Adet → TXT</div>
-    </div>
-  </header>
-
+  <header>📦 GENÇ GROSS MOBİL TERMİNAL</header>
   <div class="wrap">
-    <!-- Kamera -->
+
     <div class="card">
       <div class="row">
         <label>Kamera:</label>
         <select id="cameraSelect"></select>
         <button id="btnStart" class="primary">Kamerayı Başlat</button>
         <button id="btnStop">Durdur</button>
-        <button id="btnScanOnce" class="secondary" style="margin-left:auto">👉 Okut (Tek Sefer)</button>
       </div>
-
       <div class="videoBox">
         <video id="video" playsinline autoplay muted></video>
         <div class="roi"></div>
@@ -70,22 +57,24 @@
       </div>
     </div>
 
-    <!-- Liste -->
     <div class="card">
       <label>Barkod & Adet</label>
       <div class="row">
         <input id="barcode" placeholder="Barkod" style="flex:1;min-width:220px" />
         <button id="btnClearField">Temizle</button>
-
-        <button id="btnMinus" class="qtybtn">−1</button>
-        <input id="qty" type="number" value="1" min="1" step="1" style="width:80px;text-align:center" />
-        <button id="btnPlus" class="qtybtn">+1</button>
-
-        <button id="btnAdd" class="good">Ekle</button>
-        <button id="btnUndo">Geri Al</button>
       </div>
 
-      <div class="muted">Ürün: <span id="productName" class="pname">—</span> · Fiyat: <span id="productPrice" class="pprice">—</span></div>
+      <div class="row">
+        <button id="btnDec">-1</button>
+        <input id="qty" type="number" value="1" min="1" style="width:80px;text-align:center" />
+        <button id="btnInc">+1</button>
+        <button id="btnAdd" class="good">Ekle</button>
+      </div>
+
+      <div class="row">
+        <strong>Ürün:</strong> <span id="prodName">-</span> · 
+        <strong>Fiyat:</strong> <span id="prodPrice">-</span>
+      </div>
 
       <label>Dosya Adı:</label>
       <input id="filename" placeholder="sayim" style="width:60%" />
@@ -102,31 +91,16 @@
       </table>
       Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
     </div>
-
-    <!-- Ürün verisi yükle -->
-    <div class="card">
-      <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle (opsiyonel)</h3>
-      <div class="muted">GDF/TXT (ERP çıktın) veya CSV/JSON yükleyebilirsin. CSV: <code>barkod;isim;fiyat</code></div>
-      <div class="row">
-        <input id="productFile" type="file" accept=".gdf,.txt,.csv,.json" />
-        <button id="btnClearMap">Ürün Verisini Temizle</button>
-        <span class="chip" id="mapStat">0 ürün yüklü</span>
-      </div>
-    </div>
-
-    <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
   </div>
 
+  <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+
   <script>
-    // ---- Durum
-    const state = { items:{}, scanning:false, currentDeviceId:null, singleShot:false };
+    const state = { items:{}, scanning:false };
     let mediaStream=null, rafId=null, frames=0;
     let duplicateGuard = { code:null, until:0 };
     let lastOp = null;
-    let detector=null, off=null, octx=null;
-    let productMap = {}; // { barcode: {name, price} }
 
-    // ---- UI
     const selCam = document.getElementById('cameraSelect');
     const video  = document.getElementById('video');
     const statusEl = document.getElementById('scanStatus');
@@ -138,89 +112,105 @@
     const totalQty  = document.getElementById('totalQty');
     const filenameInp = document.getElementById('filename');
     const beep = document.getElementById('beep');
-    const btnScanOnce = document.getElementById('btnScanOnce');
-    const productNameEl = document.getElementById('productName');
-    const productPriceEl= document.getElementById('productPrice');
-    const productFile   = document.getElementById('productFile');
-    const mapStat       = document.getElementById('mapStat');
+    const prodNameEl = document.getElementById('prodName');
+    const prodPriceEl = document.getElementById('prodPrice');
 
-    // ---- Liste
+    // ürün map dosyadan doldurulacak (JSON’a çevrilmiş)
+    const productMap = {}; // örn: { "8697449113051": {name:"ÜRÜN ADI", price:"259.90"} }
+
+    function showProductInfo(code){
+      const p = productMap[code];
+      if(p){
+        prodNameEl.textContent = p.name || "-";
+        prodPriceEl.textContent = p.price || "-";
+      } else {
+        prodNameEl.textContent = "Bulunamadı";
+        prodPriceEl.textContent = "-";
+      }
+    }
+
     function render(){
       tbody.innerHTML='';
       let sum=0;
       Object.entries(state.items).forEach(([c,q])=>{
         sum += Number(q)||0;
-        const name = (productMap[c]?.name) || '—';
+        const p = productMap[c]||{};
         const tr=document.createElement('tr');
-        tr.innerHTML = `<td>${c}</td><td>${name}</td><td class="right">${q}</td><td><button onclick="del('${c}')">Sil</button></td>`;
+        tr.innerHTML = `<td>${c}</td><td>${p.name||'-'}</td><td class="right">${q}</td><td><button onclick="del('${c}')">Sil</button></td>`;
         tbody.appendChild(tr);
       });
       totalRows.textContent = Object.keys(state.items).length;
       totalQty.textContent  = sum;
     }
-    window.del=(c)=>{ delete state.items[c]; save(); render(); }
-    function upsert(c,q){ if(!c) return; const n=Math.max(1,Number(q)||1); state.items[c]=(Number(state.items[c])||0)+n; lastOp={code:c, qty:n}; save(); render(); }
-    function undo(){ if(!lastOp) return; const {code,qty}=lastOp; state.items[code]=(Number(state.items[code])||0)-qty; if(state.items[code]<=0) delete state.items[code]; lastOp=null; save(); render(); }
+    function del(c){ delete state.items[c]; save(); render(); }
+    function upsert(c,q){
+      if(!c) return;
+      const n=Math.max(1,Number(q)||1);
+      state.items[c]=(Number(state.items[c])||0)+n;
+      lastOp={code:c, qty:n};
+      save(); render();
+    }
     function save(){ localStorage.setItem('barcodeItems', JSON.stringify(state.items)); }
     function load(){ const raw=localStorage.getItem('barcodeItems'); if(raw){ try{state.items=JSON.parse(raw);}catch{} } render(); }
 
-    // ---- Dışa aktar
-    function dl(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
-    function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((filenameInp.value||'sayim')+'.txt', lines.join('\n'), 'text/plain'); }
-    function exportCSV(){ const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)]; dl((filenameInp.value||'sayim')+'.csv', lines.join('\n'), 'text/csv'); }
+    function dl(name,content,type){
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([content],{type}));
+      a.download=name; a.click(); URL.revokeObjectURL(a.href);
+    }
+    function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((filenameInp.value||'sayim')+'.txt', lines.join('\n'),'text/plain'); }
+    function exportCSV(){ const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)]; dl((filenameInp.value||'sayim')+'.csv', lines.join('\n'),'text/csv'); }
 
-    // ---- Kamera
     async function listCameras(){
       try{
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const videos = devices.filter(d=>d.kind==='videoinput');
+        const vids = devices.filter(d=>d.kind==='videoinput');
         selCam.innerHTML='';
-        videos.forEach((d,i)=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||`Kamera ${i+1}`; selCam.appendChild(o); });
-        const rear = videos.find(d=>/back|rear|arka/i.test(d.label||''));
-        state.currentDeviceId = rear?.deviceId || videos[0]?.deviceId || null;
-        if(state.currentDeviceId) selCam.value = state.currentDeviceId;
+        vids.forEach((d,i)=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||`Kamera ${i+1}`; selCam.appendChild(o); });
+        if(vids[0]) selCam.value = vids[0].deviceId;
       }catch(e){}
     }
-    selCam.onchange = ()=>{ state.currentDeviceId = selCam.value; if(state.scanning) start(); };
 
     async function start(){
       stop();
       statusEl.textContent = 'Kamera açılıyor...';
       try{
-        const constraints = {
-          video: state.currentDeviceId ? { deviceId:{exact:state.currentDeviceId}, width:{ideal:1920}, height:{ideal:1080} }
-                                      : { facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} },
-          audio:false
-        };
-        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = mediaStream; await video.play();
-        state.scanning = true;
-        statusEl.textContent = 'Tarama aktif';
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video:{deviceId:{exact:selCam.value}}, audio:false
+        });
+        video.srcObject=mediaStream; await video.play();
+        state.scanning=true;
         runNativeLoop();
         fpsCounter();
-      }catch(e){ statusEl.textContent = 'Tarama başlatılamadı'; }
+        statusEl.textContent='Tarama aktif';
+      }catch(e){ statusEl.textContent='Tarama başlatılamadı'; }
     }
 
     function stop(){
-      cancelAnimationFrame(rafId); rafId=null; frames=0; fpsEl.textContent='FPS: -';
-      const s = video.srcObject; if(s?.getTracks) s.getTracks().forEach(t=>t.stop());
-      video.srcObject=null; mediaStream=null; state.scanning=false; statusEl.textContent='Durduruldu';
+      cancelAnimationFrame(rafId);
+      const s=video.srcObject; if(s?.getTracks) s.getTracks().forEach(t=>t.stop());
+      video.srcObject=null; mediaStream=null; state.scanning=false; fpsEl.textContent='FPS: -'; statusEl.textContent='Durduruldu';
     }
 
+    let detector=null, off=null, octx=null;
     async function runNativeLoop(){
-      if(!detector){ detector = new BarcodeDetector({ formats:['ean_13','ean_8','code_128','code_39','itf','upc_e','upc_a'] }); }
+      if(!('BarcodeDetector' in window)){ statusEl.textContent='Desteklenmiyor'; return; }
+      if(!detector){ detector=new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','itf','upc_e','upc_a']}); }
       if(!off){ off=document.createElement('canvas'); octx=off.getContext('2d',{willReadFrequently:true}); }
-      const loop = async ()=>{
+      const loop=async()=>{
         if(!state.scanning) return;
         frames++;
         const vw=video.videoWidth, vh=video.videoHeight;
         if(vw&&vh){
-          const rw=Math.floor(vw*0.68), rh=Math.floor(vh*0.32);
+          const rw=Math.floor(vw*0.7), rh=Math.floor(vh*0.3);
           const rx=Math.floor((vw-rw)/2), ry=Math.floor((vh-rh)/2);
           off.width=rw; off.height=rh; octx.drawImage(video,rx,ry,rw,rh,0,0,rw,rh);
-          try{ const d=await detector.detect(off); if(d && d.length){ onCode((d[0].rawValue||'').trim()); } }catch(_){ }
+          try{
+            const d=await detector.detect(off);
+            if(d && d.length){ onCode((d[0].rawValue||'').trim()); }
+          }catch(_){}
         }
-        if(state.scanning) rafId=requestAnimationFrame(loop);
+        rafId=requestAnimationFrame(loop);
       };
       loop();
     }
@@ -229,23 +219,11 @@
       if(!text) return;
       const now=performance.now();
       if(text===duplicateGuard.code && now<duplicateGuard.until) return;
-      duplicateGuard={code:text,until:now+1500};
-      // sadece barkod alanını doldur (klavye açmadan)
+      duplicateGuard={code:text, until:now+1500};
       barcodeInp.value=text;
-      try{ beep.currentTime=0; beep.play(); }catch(_){} 
+      showProductInfo(text);
+      try{beep.currentTime=0; beep.play();}catch(_){}
       if(navigator.vibrate) navigator.vibrate(30);
-
-      // Ürün adı & fiyat göster
-      const p = productMap[text];
-      if(p){
-        productNameEl.textContent = p.name || '—';
-        productPriceEl.textContent = p.price || '—';
-      }else{
-        productNameEl.textContent = 'Bulunamadı';
-        productPriceEl.textContent = '—';
-      }
-
-      if(state.singleShot){ stop(); btnScanOnce.disabled=true; btnScanOnce.textContent='Okundu ✓'; setTimeout(()=>{btnScanOnce.disabled=false; btnScanOnce.textContent='👉 Okut (Tek Sefer)';},1000); state.singleShot=false; }
     }
 
     function fpsCounter(){
@@ -254,125 +232,23 @@
       tick();
     }
 
-    // ---- Ürün dosyası yükleme
-    document.getElementById('btnClearMap').onclick = ()=>{ productMap={}; localStorage.removeItem('productMap'); mapStat.textContent='0 ürün yüklü'; productNameEl.textContent='—'; productPriceEl.textContent='—'; };
-    productFile.onchange = async (e)=>{
-      const file = e.target.files?.[0]; if(!file) return;
-      const txt = await file.text();
-      const ext = (file.name.split('.').pop()||'').toLowerCase();
-      try{
-        if(txt.startsWith('<SIGNATURE=GNDPLU.GDF>')){
-          productMap = parseGDF(txt);
-        }else if(ext==='json'){
-          const obj = JSON.parse(txt);
-          productMap = {};
-          for(const [k,v] of Object.entries(obj)){
-            if(typeof v === 'string') productMap[k] = {name:v, price:''};
-            else productMap[k] = {name:v.name||'', price:v.price||''};
-          }
-        }else{ // csv / txt
-          productMap = parseCSV(txt);
-        }
-        localStorage.setItem('productMap', JSON.stringify(productMap));
-        mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü';
-        alert('Ürün verisi yüklendi');
-      }catch(err){
-        console.error(err);
-        alert('Dosya okunamadı. Lütfen GDF/CSV/JSON formatında deneyin.');
-      }
-    };
+    // UI events
+    document.getElementById('btnStart').onclick=()=>{listCameras(); start();};
+    document.getElementById('btnStop').onclick=()=>stop();
+    document.getElementById('btnAdd').onclick=()=>{ upsert(barcodeInp.value.trim(), qtyInp.value); barcodeInp.value=''; qtyInp.value=1; showProductInfo(''); };
+    document.getElementById('btnExport').onclick=()=>exportTXT();
+    document.getElementById('btnCSV').onclick=()=>exportCSV();
+    document.getElementById('btnClear').onclick=()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; save(); render(); } };
+    document.getElementById('btnClearField').onclick=()=>{ barcodeInp.value=''; showProductInfo(''); };
 
-    function parseCSV(txt){
-      // Destek: barkod;isim;fiyat (ayraç ; veya ,) — TR (1.234,56) & EN (1,234.56) destekli
-      const lines = txt.split(/\r?\n/).filter(x => x.trim().length);
-      const sep = lines[0].includes(';') ? ';' : ',';
-      const map = {};
-      for (const L of lines){
-        const cols = L.split(sep).map(s => s.trim());
-        if (cols.length >= 2){
-          const bc = cols[0];
-          const name = cols[1];
-          let price = (cols[2] || '').replace(/\s/g,'');
+    document.getElementById('btnInc').onclick=()=>{ qtyInp.value=Number(qtyInp.value||1)+1; };
+    document.getElementById('btnDec').onclick=()=>{ qtyInp.value=Math.max(1,Number(qtyInp.value||1)-1); };
 
-          // EN 1,234.56 -> 1234,56
-          if (/^\d{1,3}(?:,\d{3})*\.\d{2}$/.test(price)){
-            price = price.replace(/,/g,'').replace(/\./,',');
-          }
-          // TR 1.234,56 -> 1234,56
-          if (/^\d{1,3}(?:\.\d{3})*,\d{2}$/.test(price)){
-            price = price.replace(/\./g,'');
-          }
+    barcodeInp.addEventListener('input',()=>{ const code=barcodeInp.value.trim(); if(code.length>=8) showProductInfo(code); });
+    barcodeInp.addEventListener('blur',()=>{ const code=barcodeInp.value.trim(); if(code) showProductInfo(code); });
 
-          if (/^[0-9]{8,14}$/.test(bc)) map[bc] = { name, price };
-        }
-      }
-      return map;
-    }
-
-    function parseGDF(txt){
-      // GDF: 01 -> isim, 02 -> barkod + EN SAĞ satış fiyatı
-      const lines = txt.split(/\r?\n/);
-      const names = {}; // plu -> name
-      const map = {};
-      let lastPLU = null;
-      const priceRe = /(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})/g; // 1.234,56 veya 1234,56
-
-      for (const raw of lines){
-        const L = raw; if(!L) continue;
-
-        if (L.startsWith('01')){
-          const parts = L.trim().split(/\s{2,}/);
-          if (parts.length>=4){ lastPLU = parts[1]; names[lastPLU] = parts[3]; }
-        } else if (L.startsWith('02')){
-          // --- fiyat: en sağdaki ---
-          const allPrices = L.match(priceRe) || [];
-          let price = allPrices.length ? allPrices[allPrices.length-1] : '';
-
-          // binlik noktaları temizle
-          price = price.replace(/\./g,'');
-
-          // önek düzeltmeleri: 1001xxxx,yy -> xxxx,yy  |  100xxxx,yy -> xxxx,yy
-          if (/^1001\d+,\d{2}$/.test(price))      price = price.slice(4);
-          else if (/^100\d+,\d{2}$/.test(price))  price = price.slice(3);
-
-          // baştaki gereksiz sıfırlar (0,99 hariç)
-          if (!/^0,\d{2}$/.test(price)) price = price.replace(/^0+(?=\d)/,'');
-
-          // --- barkod ---
-          const nums = L.match(/\b\d{12,14}\b/g) || [];
-          const bc = nums.filter(n => n !== lastPLU).pop() || '';
-          const name = names[lastPLU] || '';
-
-          if (bc && name){ map[bc] = { name, price }; }
-        }
-      }
-      return map;
-    }
-
-    // ---- Olaylar
-    document.getElementById('btnStart').onclick = async()=>{ await listCameras(); start(); };
-    document.getElementById('btnStop').onclick  = ()=> stop();
-    document.getElementById('btnAdd').onclick   = ()=>{ upsert(barcodeInp.value.trim(), qtyInp.value); barcodeInp.value=''; qtyInp.value=1; productNameEl.textContent='—'; productPriceEl.textContent='—'; };
-    document.getElementById('btnMinus').onclick = ()=>{ qtyInp.value=Math.max(1, Number(qtyInp.value)-1); };
-    document.getElementById('btnPlus').onclick  = ()=>{ qtyInp.value=Number(qtyInp.value)+1; };
-    document.getElementById('btnClearField').onclick = ()=>{ barcodeInp.value=''; productNameEl.textContent='—'; productPriceEl.textContent='—'; };
-    document.getElementById('btnExport').onclick= ()=> exportTXT();
-    document.getElementById('btnCSV').onclick   = ()=> exportCSV();
-    document.getElementById('btnClear').onclick = ()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; save(); render(); } };
-    document.getElementById('btnUndo').onclick  = ()=> undo();
-
-    barcodeInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElementById('btnAdd').click(); } });
-    qtyInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElementById('btnAdd').click(); } });
-
-    btnScanOnce.onclick = async ()=>{ await listCameras(); state.singleShot = true; btnScanOnce.disabled = true; btnScanOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
-
-    // ---- Başlangıç
+    // Başlat
     load(); listCameras();
-    // varsa daha önce kaydedilmiş ürün verisi
-    try{
-      const pm = localStorage.getItem('productMap');
-      if(pm){ productMap = JSON.parse(pm); mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü'; }
-    }catch{}
   </script>
 </body>
 </html>
