@@ -1,113 +1,117 @@
 <!doctype html>
+
 <html lang="tr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Barkod + Adet → TXT (Hızlı Tarama)</title>
+  <title>Genç Gross Mobil Terminal — Barkod + Adet → TXT</title>
   <style>
-    :root{--bg:#0b1220;--card:#1c2944;--text:#fff;--muted:#9cb0d2;--accent:#1677ff;--ok:#1fbf75;--warn:#ff5d5d}
+    :root{
+      --bg:#ffffff;
+      --card:#f7f9fc;
+      --text:#1a1a1a;
+      --muted:#555;
+      --accent:#1C2AAE; /* logo mavisi */
+      --accent2:#F0552C; /* logo turuncusu */
+      --ok:#1fbf75;
+      --warn:#ff5d5d;
+    }
     *{box-sizing:border-box}
     body{font-family:system-ui;margin:0;background:var(--bg);color:var(--text)}
-    header{padding:10px;background:#111a2b;text-align:center}
+    header{padding:14px 10px;background:linear-gradient(90deg,var(--accent2), var(--accent));}
+    header .titles{text-align:left;color:#fff;max-width:880px;margin:auto}
+    header .titles .h1{margin:0;font-size:20px;font-weight:700}
+    header .titles .sub{margin:0;font-size:13px;color:#f0f0f0;opacity:.95}
     .wrap{max-width:880px;margin:auto}
-    .card{margin:10px;padding:10px;background:var(--card);border-radius:12px}
-    button{padding:8px 12px;margin:4px;border-radius:10px;border:none;cursor:pointer}
+    .card{margin:10px;padding:12px;background:var(--card);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+    button{padding:8px 12px;margin:4px;border-radius:10px;border:none;cursor:pointer;font-weight:600}
     .primary{background:var(--accent);color:#fff}
-    .good{background:var(--ok);color:#072b14}
-    .warn{background:var(--warn);color:#2b0b0b}
+    .good{background:var(--accent2);color:#fff}
+    .warn{background:var(--warn);color:#fff}
     .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
     label{font-size:13px}
     table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{border-bottom:1px solid #2a3756;padding:6px}
-    th{color:#7f8ca8;text-align:left}
+    th,td{border-bottom:1px solid #ccc;padding:6px}
+    th{color:#333;text-align:left}
     .right{text-align:right}
     .muted{color:var(--muted);font-size:12px}
-    /* Kamera alanı + ROI */
     .videoBox{position:relative;border-radius:12px;overflow:hidden;background:#000}
     video{display:block;width:100%;max-height:320px}
-    .roi{
-      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-      pointer-events:none;
-    }
-    .roi:after{
-      content:""; width:68%; height:32%;
-      border:2px solid rgba(255,255,255,.8);
-      border-radius:10px;
-      box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset;
-    }
+    .roi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+    .roi:after{content:""; width:68%; height:32%; border:2px solid rgba(255,255,255,.8); border-radius:10px; box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
     .status{margin-top:6px}
-    .chip{display:inline-block;background:#10203c;color:#9cb0d2;border:1px solid #2a3756;padding:2px 8px;border-radius:999px;font-size:12px}
-    input[type="range"]{vertical-align:middle}
+    .chip{display:inline-block;background:#eee;color:#333;border:1px solid #ccc;padding:2px 8px;border-radius:999px;font-size:12px}
   </style>
 </head>
 <body>
-  <header><h1>📦 Barkod + Adet → TXT</h1></header>
-  <div class="wrap">
-
-    <div class="card">
-      <div class="row">
-        <label>Kamera:</label>
-        <select id="cameraSelect"></select>
-        <button id="btnStart" class="primary">Kamerayı Başlat</button>
-        <button id="btnStop">Durdur</button>
-        <label>Yakınlaştırma:
-          <input id="zoom" type="range" min="1" max="5" step="0.1" value="1">
-        </label>
-        <label style="display:inline-flex;gap:6px;align-items:center">
-          <input id="beepOn" type="checkbox" checked> Bip
-        </label>
-      </div>
-
-      <div class="videoBox">
-        <video id="video" playsinline autoplay muted></video>
-        <div class="roi"></div>
-      </div>
-      <div class="status">
-        <span id="scanStatus" class="chip">Hazır</span>
-        <span id="tech" class="chip">Motor: -</span>
-        <span id="fps" class="chip">FPS: -</span>
-      </div>
-      <div class="muted">İpucu: Barkodu dik tut, ROI kutusunun ortasına getir. Mesafe 15–25 cm, iyi ışık.</div>
+  <header>
+    <div class="titles">
+      <div class="h1">Genç Gross Mobil Terminal</div>
+      <div class="sub">📦 Barkod + Adet → TXT</div>
     </div>
-
-    <div class="card">
-      <label>Barkod & Adet</label>
-      <div class="row">
-        <input id="barcode" placeholder="Barkod" style="flex:1;min-width:220px" />
-        <input id="qty" type="number" value="1" min="1" style="width:110px" />
-        <button id="btnAdd" class="good">Ekle</button>
-      </div>
-
-      <label>Dosya Adı:</label>
-      <input id="filename" placeholder="sayim" style="width:60%" />
-
-      <div class="row" style="margin-top:8px">
-        <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
-        <button id="btnCSV">CSV Olarak Dışa Aktar</button>
-        <button id="btnClear" class="warn">Listeyi Temizle</button>
-      </div>
-
-      <table>
-        <thead><tr><th>Barkod</th><th class="right">Adet</th><th></th></tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-      Toplam: <span id="totalRows">0</span>
-    </div>
-
-    <!-- Ses -->
-    <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
-
+  </header>
+  <div class="wrap"><div class="card">
+  <div class="row">
+    <label>Kamera:</label>
+    <select id="cameraSelect"></select>
+    <button id="btnStart" class="primary">Kamerayı Başlat</button>
+    <button id="btnStop">Durdur</button>
+    <label style="display:inline-flex;gap:6px;align-items:center">
+      <input id="beepOn" type="checkbox" checked> Bip
+    </label>
+    <label style="display:inline-flex;gap:6px;align-items:center">
+      <input id="autoAdd" type="checkbox" checked> Otomatik +1 (okuyunca ekle)
+    </label>
   </div>
 
-  <!-- ZXing fallback -->
-  <script src="https://unpkg.com/@zxing/browser@0.1.6"></script>
-  <script>
-    // ---- Durum
+  <div class="videoBox">
+    <video id="video" playsinline autoplay muted></video>
+    <div class="roi"></div>
+  </div>
+  <div class="status">
+    <span id="scanStatus" class="chip">Hazır</span>
+    <span id="tech" class="chip">Motor: -</span>
+    <span id="fps" class="chip">FPS: -</span>
+  </div>
+  <div class="muted">İpucu: Barkodu ROI kutusunun ortasına getir. Mesafe 15–25 cm, iyi ışık.</div>
+</div>
+
+<div class="card">
+  <label>Barkod & Adet</label>
+  <div class="row">
+    <input id="barcode" placeholder="Barkod" style="flex:1;min-width:220px" />
+    <input id="qty" type="number" value="1" min="1" style="width:80px;text-align:center" />
+    <button id="btnMinus">-1</button>
+    <button id="btnPlus">+1</button>
+    <button id="btnAdd" class="good">Ekle</button>
+    <button id="btnUndo">Geri Al</button>
+    <button id="btnClearBarcode">Temizle</button>
+  </div>
+
+  <label>Dosya Adı:</label>
+  <input id="filename" placeholder="sayim" style="width:60%" />
+
+  <div class="row" style="margin-top:8px">
+    <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
+    <button id="btnCSV">CSV Olarak Dışa Aktar</button>
+    <button id="btnClear" class="warn">Listeyi Temizle</button>
+  </div>
+
+  <table>
+    <thead><tr><th>Barkod</th><th class="right">Adet</th><th></th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
+</div>
+
+<audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+
+  </div>  <script src="https://unpkg.com/@zxing/browser@0.1.6"></script>  <script>
     const state = { items:{}, scanning:false, currentDeviceId:null, reader:null, engine:'-' };
     let mediaStream=null, videoTrack=null, rafId=null, fpsLast=performance.now(), frames=0;
     let duplicateGuard = { code:null, until:0 };
+    let lastOp = null; // {code, qty}
 
-    // ---- Elemanlar
     const selCam = document.getElementById('cameraSelect');
     const video  = document.getElementById('video');
     const statusEl = document.getElementById('scanStatus');
@@ -117,185 +121,102 @@
     const qtyInp  = document.getElementById('qty');
     const tbody   = document.getElementById('tbody');
     const totalRows = document.getElementById('totalRows');
+    const totalQty  = document.getElementById('totalQty');
     const filenameInp = document.getElementById('filename');
     const beep = document.getElementById('beep');
     const beepOn = document.getElementById('beepOn');
-    const zoomSlider = document.getElementById('zoom');
+    const autoAdd = document.getElementById('autoAdd');
 
-    // ---- Liste
     function render(){
       tbody.innerHTML='';
+      let sum=0;
       Object.entries(state.items).forEach(([c,q])=>{
+        sum += Number(q)||0;
         const tr=document.createElement('tr');
         tr.innerHTML = `<td>${c}</td><td class="right">${q}</td><td><button onclick="del('${c}')">Sil</button></td>`;
         tbody.appendChild(tr);
       });
       totalRows.textContent = Object.keys(state.items).length;
+      totalQty.textContent  = sum;
     }
     function del(c){ delete state.items[c]; save(); render(); }
-    function upsert(c,q){ if(!c) return; const n=Math.max(1,Number(q)||1); state.items[c]=(Number(state.items[c])||0)+n; save(); render(); }
+    function upsert(c,q){ if(!c) return; const n=Math.max(1,Number(q)||1); state.items[c]=(Number(state.items[c])||0)+n; lastOp={code:c, qty:n}; save(); render(); }
+    function undo(){ if(!lastOp) return; const {code,qty}=lastOp; state.items[code]=(Number(state.items[code])||0)-qty; if(state.items[code]<=0) delete state.items[code]; lastOp=null; save(); render(); }
     function save(){ localStorage.setItem('barcodeItems', JSON.stringify(state.items)); }
     function load(){ const raw=localStorage.getItem('barcodeItems'); if(raw){ try{state.items=JSON.parse(raw);}catch{} } render(); }
 
-    // ---- Export
     function dl(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
     function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((filenameInp.value||'sayim')+'.txt', lines.join('\n'), 'text/plain'); }
     function exportCSV(){ const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)]; dl((filenameInp.value||'sayim')+'.csv', lines.join('\n'), 'text/csv'); }
 
-    // ---- Kamera listesi
     async function listCameras(){
       try{
         const devices = await ZXingBrowser.BrowserMultiFormatReader.listVideoInputDevices();
         selCam.innerHTML='';
         devices.forEach((d,i)=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||`Kamera ${i+1}`; selCam.appendChild(o); });
-        const rear = devices.find(d=>/back|rear|arka/i.test(d.label||'')); 
+        const rear = devices.find(d=>/back|rear|arka/i.test(d.label||''));
         state.currentDeviceId = rear?.deviceId || devices[0]?.deviceId || null;
         if(state.currentDeviceId) selCam.value = state.currentDeviceId;
-      }catch(e){ /* boş geç */ }
+      }catch(e){ /* yoksay */ }
     }
     selCam.onchange = ()=>{ state.currentDeviceId = selCam.value; if(state.scanning) start(); };
 
-    // ---- Başlat / Durdur
     async function start(){
       stop();
       statusEl.textContent = 'Kamera açılıyor...';
       try{
         const constraints = {
-          video: state.currentDeviceId
-            ? { deviceId:{exact:state.currentDeviceId}, width:{ideal:1920}, height:{ideal:1080}, focusMode:'continuous' }
-            : { facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}, focusMode:'continuous' },
+          video: state.currentDeviceId ? { deviceId:{exact:state.currentDeviceId}, width:{ideal:1920}, height:{ideal:1080} } : { facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} },
           audio:false
         };
         mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = mediaStream;
-        await video.play();
-        videoTrack = mediaStream.getVideoTracks()[0] || null;
+        video.srcObject = mediaStream; await video.play();
         state.scanning = true;
 
-        // Donanımsal zoom desteği varsa bağla
-        zoomSlider.oninput = async ()=>{
-          if(!videoTrack) return;
-          const caps = videoTrack.getCapabilities?.();
-          if(caps?.zoom){
-            const v = Math.min(caps.zoom.max, Math.max(caps.zoom.min, Number(zoomSlider.value)));
-            try{ await videoTrack.applyConstraints({ advanced:[{ zoom:v }] }); }catch(_){}
-          }
-        };
+        state.reader = new ZXingBrowser.BrowserMultiFormatReader();
+        await state.reader.decodeFromVideoElementContinuously(video,(res,err)=>{ frames++; if(res){ onCode(res.getText()); } });
 
-        // Motor seçimi: BarcodeDetector -> ZXing
-        const hasNative = ('BarcodeDetector' in window);
-        if(hasNative){
-          state.engine = 'BarcodeDetector';
-          techEl.textContent = 'Motor: Yerel (hızlı)';
-          runNativeLoop();
-        }else{
-          state.engine = 'ZXing';
-          techEl.textContent = 'Motor: ZXing';
-          runZXing();
-        }
-        statusEl.textContent = 'Tarama aktif';
-        fpsCounter();
-      }catch(e){
-        statusEl.textContent = 'Tarama başlatılamadı';
-      }
+        statusEl.textContent = 'Tarama aktif'; fpsCounter();
+      }catch(e){ statusEl.textContent = 'Tarama başlatılamadı'; }
     }
 
     function stop(){
-      try{ state.reader?.reset?.(); }catch(_){}
+      try{ state.reader?.reset?.(); }catch(_){ }
       cancelAnimationFrame(rafId); rafId=null; frames=0; fpsEl.textContent='FPS: -';
       const s = video.srcObject; if(s?.getTracks) s.getTracks().forEach(t=>t.stop());
-      video.srcObject=null; mediaStream=null; videoTrack=null; state.scanning=false;
-      statusEl.textContent='Durduruldu';
+      video.srcObject=null; mediaStream=null; state.scanning=false; statusEl.textContent='Durduruldu';
     }
 
-    // ---- Native (BarcodeDetector) döngüsü: ROI kırpıp oku
-    let detector = null, off=null, octx=null;
-    async function runNativeLoop(){
-      if(!detector){
-        detector = new BarcodeDetector({ formats: ['ean_13','ean_8','code_128','code_39','itf','upc_e','upc_a'] });
-      }
-      if(!off){
-        off = document.createElement('canvas'); octx = off.getContext('2d', { willReadFrequently:true });
-      }
-      const loop = async ()=>{
-        if(!state.scanning) return;
-        frames++;
-        const vw = video.videoWidth, vh = video.videoHeight;
-        if(vw && vh){
-          // ROI: merkezde 68%x32%
-          const rw = Math.floor(vw*0.68), rh = Math.floor(vh*0.32);
-          const rx = Math.floor((vw - rw)/2), ry = Math.floor((vh - rh)/2);
-          off.width = rw; off.height = rh;
-          octx.drawImage(video, rx, ry, rw, rh, 0, 0, rw, rh);
-          try{
-            const bit = off; // direkt canvas
-            const d = await detector.detect(bit);
-            if(d && d.length){
-              const code = (d[0].rawValue||'').trim();
-              onCode(code);
-            }
-          }catch(_){}
-        }
-        rafId = requestAnimationFrame(loop);
-      };
-      loop();
-    }
-
-    // ---- ZXing sürekli çözüm
-    async function runZXing(){
-      try{
-        state.reader = new ZXingBrowser.BrowserMultiFormatReader();
-        // Sadece yaygın formatları ipucu verelim (performans)
-        try{
-          const formats=[ZXingBrowser.BarcodeFormat.EAN_13,ZXingBrowser.BarcodeFormat.EAN_8,ZXingBrowser.BarcodeFormat.CODE_128,ZXingBrowser.BarcodeFormat.CODE_39,ZXingBrowser.BarcodeFormat.ITF];
-          state.reader.hints = new Map([[ZXingBrowser.DecodeHintType.POSSIBLE_FORMATS, formats]]);
-        }catch(_){}
-        await state.reader.decodeFromVideoElementContinuously(video,(res,err)=>{
-          frames++;
-          if(res){ onCode(res.getText()); }
-        });
-      }catch(_){}
-    }
-
-    // ---- Kod yakalandı
     function onCode(text){
       if(!text) return;
-      const now = performance.now();
-      if(duplicateGuard.code === text && now < duplicateGuard.until) return; // 1.5 sn içinde aynı kodu tekrar etme
-      duplicateGuard = { code:text, until: now + 1500 };
-
-      barcodeInp.value = text;
-      qtyInp.focus();
-      if(beepOn.checked){ try{beep.currentTime=0; beep.play();}catch(_){} }
-      if(navigator.vibrate) navigator.vibrate(35);
+      const now=performance.now();
+      if(text===duplicateGuard.code && now<duplicateGuard.until) return;
+      duplicateGuard={code:text,until:now+1500};
+      if(autoAdd.checked){ upsert(text,1); if(beepOn.checked){ try{beep.currentTime=0;beep.play();}catch(_){} } }
+      else{ barcodeInp.value=text; qtyInp.focus(); if(beepOn.checked){ try{beep.currentTime=0;beep.play();}catch(_){} } }
+      if(navigator.vibrate) navigator.vibrate(30);
     }
 
-    // ---- FPS ölçer
     function fpsCounter(){
-      const tick = ()=>{
-        if(!state.scanning) return;
-        const now = performance.now();
-        if(now - fpsLast >= 1000){
-          fpsEl.textContent = 'FPS: ' + frames;
-          frames = 0; fpsLast = now;
-        }
-        requestAnimationFrame(tick);
-      };
+      let last=performance.now();
+      const tick=()=>{ if(!state.scanning) return; const now=performance.now(); if(now-last>=1000){ fpsEl.textContent='FPS: '+frames; frames=0; last=now; } requestAnimationFrame(tick); };
       tick();
     }
 
-    // ---- UI butonları
+    // UI
     document.getElementById('btnStart').onclick = async()=>{ await listCameras(); start(); };
     document.getElementById('btnStop').onclick  = ()=> stop();
     document.getElementById('btnAdd').onclick   = ()=>{ upsert(barcodeInp.value.trim(), qtyInp.value); barcodeInp.value=''; qtyInp.value=1; barcodeInp.focus(); };
+    document.getElementById('btnMinus').onclick = ()=>{ qtyInp.value=Math.max(1, Number(qtyInp.value)-1); };
+    document.getElementById('btnPlus').onclick  = ()=>{ qtyInp.value=Number(qtyInp.value)+1; };
+    document.getElementById('btnClearBarcode').onclick = ()=>{ barcodeInp.value=''; };
     document.getElementById('btnExport').onclick= ()=> exportTXT();
     document.getElementById('btnCSV').onclick   = ()=> exportCSV();
     document.getElementById('btnClear').onclick = ()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; save(); render(); } };
+    document.getElementById('btnUndo').onclick  = ()=> undo();
     barcodeInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElementById('btnAdd').click(); } });
     qtyInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElementById('btnAdd').click(); } });
 
-    // ---- Başlat
     load(); listCameras();
-  </script>
-</body>
+  </script></body>
 </html>
