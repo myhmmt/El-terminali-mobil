@@ -1,12 +1,23 @@
 {
   "name": "Genç Gross Mobil Terminal",
-  "short_name": "Gross Terminal",
-  "start_url": "./index.html",
+  "short_name": "GGMT",
+  "description": "Barkod/Kod okuyucu + ürün sayım terminali (offline destekli)",
+  "start_url": "./index.html?v=15",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1C2AAE",
+  "background_color": "#1C2AAE",
+  "theme_color": "#F0552C",
+  "orientation": "portrait",
+  "version": "15",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }
