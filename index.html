@@ -64,7 +64,6 @@
       <span id="scanStatus" class="chip">Hazır</span>
       <span id="fps" class="chip">FPS: -</span>
     </div>
-    <div class="muted">İpucu: Barkodu kutunun içinde, 15–25 cm mesafe, iyi ışık.</div>
   </div>
 
   <!-- LİSTE + GİRİŞ -->
@@ -104,8 +103,8 @@
 
   <!-- ÜRÜN VERİSİ -->
   <div class="card">
-    <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle (opsiyonel)</h3>
-    <div class="muted">GDF/TXT (ERP çıktısı) veya CSV/JSON yükleyebilirsin. CSV örnek: <code>barkod;isim;fiyat</code> (fiyat 11,90 gibi virgüllü olabilir)</div>
+    <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle</h3>
+    <div class="muted">CSV/TXT (barkod;isim;fiyat), JSON veya GDF dosyası yükle.</div>
     <div class="row">
       <input id="productFile" type="file" accept=".gdf,.txt,.csv,.json" />
       <button id="btnClearMap" class="warn">Ürün Verisini Temizle</button>
@@ -113,16 +112,18 @@
     </div>
   </div>
 
-  <audio id="beep"  src="beep.ogg"  preload="auto"></audio>
-  <audio id="err"   src="error.ogg" preload="auto"></audio>
+  <audio id="beep" src="beep.ogg" preload="auto"></audio>
+  <audio id="err" preload="auto">
+    <source src="error.ogg" type="audio/ogg">
+    <source src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3" type="audio/mpeg">
+  </audio>
 </div>
 
 <script src="app.js"></script>
 <script>
-  // PWA: service worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  }
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
