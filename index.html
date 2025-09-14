@@ -36,10 +36,11 @@
     .qtybtn{padding:6px 10px;border:1px solid #d6daf2;background:#fff;border-radius:8px}
     .pname{font-weight:700;color:#0a7a2b}
     .pprice{font-weight:700;color:#a14900}
-    .result{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border:1px solid #d6daf2;border-radius:8px;margin-top:6px;background:#fff;cursor:pointer}
+    .result{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid #d6daf2;border-radius:8px;margin-top:6px;background:#fff;cursor:pointer}
     .result:hover{background:#eef2ff}
+    .rs-left{display:flex;flex-direction:column}
     .rs-name{font-weight:700}
-    .rs-code{font-family:ui-monospace,Menlo,Consolas,monospace;color:#555}
+    .rs-meta{font-family:ui-monospace,Menlo,Consolas,monospace;color:#555}
   </style>
 </head>
 <body>
@@ -80,7 +81,6 @@
   <div class="card">
     <label>Barkod / Kod & Adet</label>
     <div class="row">
-      <!-- SAYI KLAVYESİ: inputmode="numeric" -->
       <input id="barcode" type="text" inputmode="numeric" pattern="[0-9]*"
              autocomplete="off" placeholder="Barkod veya Stok Kodu"
              style="flex:1;min-width:220px" />
@@ -132,7 +132,7 @@
     <h3 style="margin:4px 0 8px 6px">Ürün Arama (isimle)</h3>
     <input id="searchName" type="text" placeholder="Örn: onurlu, ekmek, kolonya..." style="width:100%">
     <div id="searchResults"></div>
-    <div class="muted">Sonuçlara dokununca kodu kopyalar ve üst girişe doldurur.</div>
+    <div class="muted">Sonuçlara dokununca barkodu kopyalar ve üst girişe doldurur.</div>
   </div>
 
   <!-- Sesler -->
