@@ -1,11 +1,12 @@
 <!doctype html>
+
 <html lang="tr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Genç Gross Mobil Terminal — Barkod/Kod + Adet → TXT</title>
   <meta name="theme-color" content="#1C2AAE"/>
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json?v=15">
   <style>
     :root{--blue:#1C2AAE;--orange:#F0552C;--bg:#fff;--card:#f6f8ff;--text:#102050;--muted:#667;--ok:#1fbf75;--warn:#ff5d5d}
     *{box-sizing:border-box}
@@ -49,9 +50,7 @@
     <div class="ttl">📦 GENÇ GROSS • Mobil Terminal</div>
     <div>Barkod/Kod + Adet → TXT</div>
   </div>
-</header>
-
-<div class="wrap">
+</header><div class="wrap">
   <!-- KAMERA -->
   <div class="card">
     <div class="row">
@@ -75,10 +74,7 @@
       <span id="scanStatus" class="chip">Hazır</span>
       <span id="fps" class="chip">FPS: -</span>
     </div>
-  </div>
-
-  <!-- LİSTE + GİRİŞ -->
-  <div class="card">
+  </div>  <!-- LİSTE + GİRİŞ -->  <div class="card">
     <label>Barkod / Kod & Adet</label>
     <div class="row">
       <input id="barcode" type="text" inputmode="numeric" pattern="[0-9]*"
@@ -93,28 +89,24 @@
       <button id="btnPlus" class="qtybtn">+1</button>
       <button id="btnAdd" class="good">Ekle</button>
       <button id="btnUndo">Geri Al</button>
-    </div>
+    </div><div class="muted">Ürün: <span id="productName" class="pname">—</span> · Fiyat: <span id="productPrice" class="pprice">—</span></div>
 
-    <div class="muted">Ürün: <span id="productName" class="pname">—</span> · Fiyat: <span id="productPrice" class="pprice">—</span></div>
+<label>Dosya Adı:</label>
+<input id="filename" placeholder="sayim" style="width:60%" />
 
-    <label>Dosya Adı:</label>
-    <input id="filename" placeholder="sayim" style="width:60%" />
+<div class="row" style="margin-top:8px">
+  <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
+  <button id="btnCSV" class="accent">CSV Olarak Dışa Aktar</button>
+  <button id="btnClear" class="warn">Listeyi Temizle</button>
+</div>
 
-    <div class="row" style="margin-top:8px">
-      <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
-      <button id="btnCSV" class="accent">CSV Olarak Dışa Aktar</button>
-      <button id="btnClear" class="warn">Listeyi Temizle</button>
-    </div>
+<table>
+  <thead><tr><th>Kod/Barkod</th><th>İsim</th><th class="right">Adet</th><th></th></tr></thead>
+  <tbody id="tbody"></tbody>
+</table>
+Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
 
-    <table>
-      <thead><tr><th>Kod/Barkod</th><th>İsim</th><th class="right">Adet</th><th></th></tr></thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
-  </div>
-
-  <!-- ÜRÜN VERİSİ -->
-  <div class="card">
+  </div>  <!-- ÜRÜN VERİSİ -->  <div class="card">
     <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle</h3>
     <div class="muted">
       CSV/TXT (ör. <b>Stok kodu;Stok ismi;…;Fiyat 1</b>) veya JSON/GDF yükleyebilirsin.
@@ -122,32 +114,25 @@
     </div>
     <div class="row">
       <input id="productFile" type="file" accept=".gdf,.txt,.csv,.json" />
+      <label for="encSel" class="muted">Kodlama:</label>
+      <select id="encSel">
+        <option value="utf-8">UTF-8 (varsayılan)</option>
+        <option value="windows-1254">Türkçe (Windows-1254)</option>
+        <option value="iso-8859-9">Türkçe (ISO-8859-9)</option>
+      </select>
       <button id="btnClearMap" class="warn">Ürün Verisini Temizle</button>
       <span class="chip" id="mapStat">0 ürün yüklü</span>
     </div>
-  </div>
-
-  <!-- ÜRÜN ARAMA (isimle) -->
-  <div class="card">
+  </div>  <!-- ÜRÜN ARAMA (isimle) -->  <div class="card">
     <h3 style="margin:4px 0 8px 6px">Ürün Arama (isimle)</h3>
-    <input id="searchName" type="text" placeholder="Örn: onurlu, ekmek, kolonya..." style="width:100%">
+    <input id="nameSearch" type="text" placeholder="Örn: onurlu, ekmek, kolonya..." style="width:100%">
     <div id="searchResults"></div>
     <div class="muted">Sonuçlara dokununca barkodu kopyalar ve üst girişe doldurur.</div>
-  </div>
+  </div>  <!-- Sesler --><audio id="beep" src="beep.ogg" preload="auto"></audio>
 
-  <!-- Sesler -->
-  <audio id="beep" src="beep.ogg" preload="auto"></audio>
-  <audio id="err" preload="auto">
-    <source src="error.ogg" type="audio/ogg">
-    <source src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3" type="audio/mpeg">
-  </audio>
-</div>
-
-<script src="app.js"></script>
-<script>
+</div><script src="app.js?v=15"></script><script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  navigator.serviceWorker.register('./sw.js?v=15').catch(()=>{});
 }
-</script>
-</body>
+</script></body>
 </html>
