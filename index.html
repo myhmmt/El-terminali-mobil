@@ -67,7 +67,6 @@
       <span id="scanStatus" class="chip">Hazır</span>
       <span id="fps" class="chip">FPS: -</span>
     </div>
-    <div class="muted">İpucu: Barkodu ROI kutusunun ortasına getir. Mesafe 15–25 cm, iyi ışık.</div>
   </div>
 
   <!-- GİRİŞ + LİSTE -->
@@ -138,5 +137,14 @@
 </div>
 
 <script src="app.js"></script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js?v=3")
+      .then(r => console.log("SW kayıt:", r.scope))
+      .catch(err => console.log("SW hata:", err));
+  });
+}
+</script>
 </body>
 </html>
