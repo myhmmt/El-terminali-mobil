@@ -1,4 +1,3 @@
-// Basit offline cache
 const CACHE = 'gg-terminal-v2';
 const ASSETS = [
   './',
@@ -22,9 +21,7 @@ self.addEventListener('activate', (e)=>{
   self.clients.claim();
 });
 self.addEventListener('fetch', (e)=>{
-  const req = e.request;
-  // Önce cache, yoksa ağ; ağ da yoksa cachete ne varsa
   e.respondWith(
-    caches.match(req).then(res=> res || fetch(req).catch(()=>caches.match('./index.html')))
+    caches.match(e.request).then(res=>res || fetch(e.request).catch(()=>caches.match('./index.html')))
   );
 });
