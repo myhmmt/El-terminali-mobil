@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Genç Gross Mobil Terminal — Barkod + Adet → TXT</title>
+  <title>Genç Gross Mobil Terminal — Barkod/Kod + Adet → TXT</title>
   <meta name="theme-color" content="#1C2AAE"/>
   <link rel="manifest" href="manifest.json">
   <style>
@@ -36,13 +36,17 @@
     .qtybtn{padding:6px 10px;border:1px solid #d6daf2;background:#fff;border-radius:8px}
     .pname{font-weight:700;color:#0a7a2b}
     .pprice{font-weight:700;color:#a14900}
+    .result{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border:1px solid #d6daf2;border-radius:8px;margin-top:6px;background:#fff;cursor:pointer}
+    .result:hover{background:#eef2ff}
+    .rs-name{font-weight:700}
+    .rs-code{font-family:ui-monospace,Menlo,Consolas,monospace;color:#555}
   </style>
 </head>
 <body>
 <header>
   <div class="wrap">
     <div class="ttl">📦 GENÇ GROSS • Mobil Terminal</div>
-    <div>Barkod + Adet → TXT</div>
+    <div>Barkod/Kod + Adet → TXT</div>
   </div>
 </header>
 
@@ -60,7 +64,7 @@
       <label style="display:inline-flex;gap:6px;align-items:center">
         <input type="checkbox" id="onlyEAN" checked> Sadece EAN (yanlış okumayı azaltır)
       </label>
-      <label class="chip">Hassasiyet: 2 kare onay</label>
+      <span class="chip">Hassasiyet: 2 kare onay</span>
     </div>
     <div class="videoBox">
       <video id="video" playsinline autoplay muted></video>
@@ -74,10 +78,10 @@
 
   <!-- LİSTE + GİRİŞ -->
   <div class="card">
-    <label>Barkod & Adet</label>
+    <label>Barkod / Kod & Adet</label>
     <div class="row">
-      <input id="barcode" type="tel" inputmode="numeric" pattern="[0-9]*"
-             autocomplete="off" placeholder="Barkod" style="flex:1;min-width:220px" />
+      <input id="barcode" type="text" autocomplete="off" placeholder="Barkod veya Stok Kodu (örn. 50526)"
+             style="flex:1;min-width:220px" />
       <button id="btnComplete" class="accent">Tamam</button>
       <button id="btnClearField">Temizle</button>
     </div>
@@ -101,7 +105,7 @@
     </div>
 
     <table>
-      <thead><tr><th>Barkod</th><th>İsim</th><th class="right">Adet</th><th></th></tr></thead>
+      <thead><tr><th>Kod/Barkod</th><th>İsim</th><th class="right">Adet</th><th></th></tr></thead>
       <tbody id="tbody"></tbody>
     </table>
     Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
@@ -111,16 +115,26 @@
   <div class="card">
     <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle</h3>
     <div class="muted">
-      CSV/TXT (barkod;isim;fiyat), JSON veya GDF yükleyebilirsin.
+      CSV/TXT (**Stok kodu;Stok ismi;…;Fiyat 1**) veya JSON/GDF yükleyebilirsin.
+      <br><b>CSV Fiyat Sütunu (ops.)</b>:
+      <input id="csvPriceCol" type="number" min="1" style="width:90px" placeholder="örn. 5">
+      <small>(Boşsa “Fiyat 1” otomatik bulunur.)</small>
       <br><b>GDF Fiyat Sütunu (ops.)</b>:
       <input id="gdfCol" type="number" min="1" style="width:90px" placeholder="örn. 6">
-      <small>(Boşsa satırın en sağındaki fiyat alınır)</small>
     </div>
     <div class="row">
       <input id="productFile" type="file" accept=".gdf,.txt,.csv,.json" />
       <button id="btnClearMap" class="warn">Ürün Verisini Temizle</button>
       <span class="chip" id="mapStat">0 ürün yüklü</span>
     </div>
+  </div>
+
+  <!-- ÜRÜN ARAMA (isimle) -->
+  <div class="card">
+    <h3 style="margin:4px 0 8px 6px">Ürün Arama (isimle)</h3>
+    <input id="searchName" type="text" placeholder="Örn: onurlu, ekmek, kolonya..." style="width:100%">
+    <div id="searchResults"></div>
+    <div class="muted">Sonuçlara dokununca kodu kopyalar ve üst girişe doldurur.</div>
   </div>
 
   <!-- Sesler -->
