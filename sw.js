@@ -1,5 +1,5 @@
 // Basit offline cache
-const CACHE = 'gg-terminal-v1';
+const CACHE = 'gg-terminal-v2';
 const ASSETS = [
   './',
   './index.html',
