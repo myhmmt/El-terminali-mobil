@@ -1,4 +1,4 @@
-const CACHE = 'gg-terminal-v2';
+const CACHE = 'gg-terminal-v3';
 const ASSETS = [
   './',
   './index.html',
