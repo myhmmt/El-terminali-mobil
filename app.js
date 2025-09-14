@@ -129,8 +129,9 @@ function onCode(text){
 }
 function fpsCounter(){ let last=performance.now(); const tick=()=>{ if(!state.scanning) return; const now=performance.now(); if(now-last>=1000){ fpsEl.textContent='FPS: '+frames; frames=0; last=now; } requestAnimationFrame(tick); }; tick(); }
 
-// ====== Ürün VERİSİ ======
-document.getElementById('btnClearMap').onclick=()=>{ productMap={}; productByCode={}; localStorage.removeItem('productMap'); localStorage.removeItem('productByCode'); mapStat.textContent='0 ürün yüklü'; showProductInfo(''); searchList.innerHTML=''; };
+// ====== ÜRÜN VERİSİ ======
+document.getElementById('btnClearMap').onclick=()=>{ productMap={}; productByCode={}; localStorage.removeItem('productMap'); localStorage.removeItem('productByCode'); localStorage.removeItem('productCount'); mapStat.textContent='0 ürün yüklü'; showProductInfo(''); searchList.innerHTML=''; };
+
 productFile.onchange=async(e)=>{
   const file=e.target.files?.[0]; if(!file) return;
   let txt='';
@@ -141,6 +142,7 @@ productFile.onchange=async(e)=>{
   }catch{ alert('Dosya okunamadı.'); return; }
   loadProductText(txt,file.name||'dosya');
 };
+
 function loadProductText(txt,src='metin'){
   try{
     productMap={}; productByCode={};
@@ -156,15 +158,18 @@ function loadProductText(txt,src='metin'){
     }else{
       count=parseCSV(txt);
     }
+    // kalıcı sakla + gerçek kayıt sayısını sakla
     localStorage.setItem('productMap', JSON.stringify(productMap));
     localStorage.setItem('productByCode', JSON.stringify(productByCode));
+    localStorage.setItem('productCount', String(count));
     mapStat.textContent=count+' ürün yüklü';
     showProductInfo(barcodeInp.value.trim());
     alert(`${count} ürün yüklendi (${src}).`);
   }catch(err){ console.error(err); alert('Veri çözümlenemedi. CSV/TXT (stokKodu;isim;…;fiyat), JSON veya imzalı GDF kullanın.'); }
 }
 
-// CSV/TXT: stokKodu;stokAdı;…;fiyat1  (+ satırın sağından fiyatı yakalama)
+// CSV/TXT: stokKodu;stokAdı;…;fiyat1
+// (Fiyatı bulmak için TÜM satırı tarayıp en sağdaki para desenini yakalar.)
 function parseCSV(txt){
   const lines=txt.split(/\r?\n/).filter(x=>x.trim().length);
   const sep=lines[0]?.includes(';')?';':',';
@@ -174,12 +179,14 @@ function parseCSV(txt){
     if(cols.length<2) continue;
     const code = cols[0];           // stok kodu (barkodsuz olabilir)
     const name = cols[1];
-    // olası barkod sütunları
-    const maybeNums = cols.slice(1,4).map(x=>x.replace(/\D/g,''));
+
+    // barkod tespiti: ilk 4 sütun içinde 8–14 haneli temiz sayı
+    const maybeNums = cols.slice(0,4).map(x=>x.replace(/\D/g,''));
     const barcode = maybeNums.find(nm => /^\d{8,14}$/.test(nm)) || '';
-    // fiyat: en sağ 2-3 sütundan
-    const rightPart = cols.slice(-3).join(' ');
-    const price = priceFromTextRightmost(rightPart);
+
+    // fiyat: TÜM satırdan en sağdaki para deseni
+    const price = priceFromTextRightmost(cols.join(' '));
+
     addRec({ barcode, code, name, price });
     n++;
   }
@@ -227,8 +234,7 @@ searchName.addEventListener('input', ()=>{
   const q=searchName.value.trim().toLocaleLowerCase('tr');
   searchList.innerHTML='';
   if(!q) return;
-  // productMap + productByCode birleşik gez: barcode tabanlısı yeterli
-  const list = Object.values(productMap);
+  const list = Object.values(productMap); // barkodlu kayıtlar
   let shown=0;
   for(const p of list){
     if(!p?.name) continue;
@@ -270,13 +276,14 @@ qtyInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElement
 
 btnScanOnce.onclick=async()=>{ await listCameras(); state.singleShot=true; btnScanOnce.disabled=true; btnScanOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
 
-// localStorage'dan ürün verisini çek
+// localStorage'dan ürün verisini çek (gerçek kayıt sayısını kullan)
 try{
   const pm=localStorage.getItem('productMap');
   const pc=localStorage.getItem('productByCode');
+  const cntStr=localStorage.getItem('productCount');
   if(pm){ productMap=JSON.parse(pm); }
   if(pc){ productByCode=JSON.parse(pc); }
-  const cnt=new Set([...Object.keys(productMap),...Object.keys(productByCode)]).size;
+  const cnt = Number(cntStr)||0;
   if(cnt) mapStat.textContent=cnt+' ürün yüklü';
 }catch{}
 load(); listCameras();
