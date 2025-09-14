@@ -1,11 +1,11 @@
 // Genç Gross Mobil Terminal — Service Worker (offline desteği)
-const CACHE_NAME = 'gg-terminal-v4';
+const CACHE_NAME = 'gg-terminal-v15';
 
 const FILES_TO_CACHE = [
   './',
   './index.html',
-  './app.js',
-  './manifest.json',
+  './app.js?v=15',
+  './manifest.json?v=15',
   './beep.ogg',
   './error.ogg',
   './icon-192.png',
@@ -36,7 +36,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((response) => {
+    caches.match(event.request, {ignoreSearch:true}).then((response) => {
       return response || fetch(event.request);
     })
   );
