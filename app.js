@@ -1,4 +1,4 @@
-/* Genç Gross Mobil Terminal — güçlü eşleştirme + sayısal klavye + miktarda Enter ile ekleme */
+/* Genç Gross Mobil Terminal — arama: sadece barkod göster, kısa kodları destekle, miktarda Enter=Ekle */
 const state = { items:{}, scanning:false, currentDeviceId:null, singleShot:false };
 let mediaStream=null, rafId=null, frames=0, duplicateGuard={code:null,until:0}, lastOp=null;
 let detector=null, off=null, octx=null;
@@ -24,6 +24,7 @@ function trFold(s=''){return s.toLowerCase()
   .replace(/ğ/g,'g').replace(/Ğ/g,'g').replace(/ç/g,'c').replace(/Ç/g,'c')
   .replace(/ö/g,'o').replace(/Ö/g,'o').replace(/ü/g,'u').replace(/Ü/g,'u');}
 const stripDigits = s => String(s||'').replace(/\D/g,'');
+const isEAN = k => /^\d{8,14}$/.test(k);
 
 // ---- Liste ----
 function render(){ tbody.innerHTML=''; let sum=0;
@@ -84,7 +85,7 @@ function normalizeAndValidate(text){
   const digits=(text||'').trim().replace(/\D/g,'');
   if(digits.length===13 && isValidEAN13(digits)) return digits;
   if(digits.length===8  && isValidEAN8(digits))  return digits;
-  if(!onlyEANBox.checked && /^\d{3,20}$/.test(digits)) return digits; // numerik kod
+  if(!onlyEANBox.checked && /^\d{1,24}$/.test(digits)) return digits; // kısa mağaza kodları dahil
   return null;
 }
 async function runNativeLoop(){
@@ -123,7 +124,7 @@ function onCodeAccepted(code){
   duplicateGuard={code,until:now+1500};
 
   barcodeInp.value=code; showProductInfo(code);
-  const found=!!smartLookup(code); // akıllı eşleşme
+  const found=!!smartLookup(code);
   safePlay(found?beep:err); vibrate(found?30:80);
 
   if(state.singleShot){
@@ -138,16 +139,11 @@ function onCodeAccepted(code){
 // ---- Akıllı ürün eşleştirme ----
 function smartLookup(key){
   if(!key) return null;
-  // 1) olduğu gibi
   if(productMap[key]) return productMap[key];
-  // 2) sadece rakamlar
   const d=stripDigits(key); if(d && productMap[d]) return productMap[d];
-  // 3) baştaki sıfırları kırp
   const dz=d.replace(/^0+(?=\d)/,''); if(dz && productMap[dz]) return productMap[dz];
   return null;
 }
-
-// Ürün bilgisini gösterirken de akıllı bak
 function showProductInfo(code){
   const p=smartLookup(code);
   if(p){ productNameEl.textContent=p.name||'—'; productPriceEl.textContent=p.price||'—'; }
@@ -189,7 +185,7 @@ function parseJSON(txt){
   return map;
 }
 
-// STOKK biçimi: "Stok kodu;Stok ismi; ... ; Fiyat 1" (+ varsa barkod sütunu)
+// STOKK: "Stok kodu;Stok ismi; ... ; Fiyat 1" (+ varsa barkod sütunu)
 function parseSTOKK(txt){
   const lines=txt.split(/\r?\n/).filter(x=>x.trim().length);
   if(lines.length<2) return {};
@@ -198,7 +194,7 @@ function parseSTOKK(txt){
   let ixCode=head.findIndex(h=>/stok\s*kodu|kod/.test(h));     if(ixCode<0) ixCode=0;
   let ixName=head.findIndex(h=>/stok\s*ismi|stok\s*adi|ad|isim|name/.test(h)); if(ixName<0) ixName=1;
   let ixPrice=head.findIndex(h=>/fiyat/.test(h));              if(ixPrice<0) ixPrice=2;
-  let ixBarcode=head.findIndex(h=>/bar\s*kodu|barkod|barcode/.test(h)); // varsa 1. satırda
+  let ixBarcode=head.findIndex(h=>/bar\s*kodu|barkod|barcode/.test(h));
   if(ixBarcode<0 && lines.length>1){
     const head2=lines[1].split(sep).map(s=>s.trim().toLowerCase());
     ixBarcode=head2.findIndex(h=>/bar\s*kodu|barkod|barcode/.test(h));
@@ -218,16 +214,17 @@ function parseSTOKK(txt){
     const name=cleanupName(rawName);
     const price=normPriceFlexible(rawPrice).disp;
 
+    // mağaza kodu (artık 1 karakter de olabilir)
     const keyCode=rawCode.replace(/\s+/g,'');
     if(validKey(keyCode)) map[keyCode] = {name,price};
 
+    // barkod (yalnızca 8–14 hane)
     const digits=stripDigits(rawBarcode);
-    if(/^\d{8,14}$/.test(digits)) map[digits] = {name,price};
+    if(isEAN(digits)) map[digits] = {name,price};
   }
   return map;
 }
-
-function validKey(k){ return k && k.length>=3 && k.length<=24; }
+function validKey(k){ return !!k && k.length>=1 && k.length<=24; }
 function cleanupName(s){ return String(s||'').replace(/\s{2,}/g,' ').trim(); }
 
 function parseCSVGeneric(txt){
@@ -255,7 +252,7 @@ function parseCSVGeneric(txt){
     if(code && /^[A-Za-z0-9\-_.]+$/.test(code)) map[code]={name,price};
     else{
       code=(cols[colCode]||'').replace(/\s+/g,'');
-      if(/^\d{8,14}$/.test(code)) map[code]={name,price};
+      if(isEAN(code)) map[code]={name,price};
     }
   }
   return map;
@@ -278,7 +275,6 @@ function normPriceFlexible(p){
 function parseGDF(txt){
   const lines=txt.split(/\r?\n/);
   const names={}; let lastPLU=null; const map={};
-
   for(let i=0;i<lines.length;i++){
     const raw=lines[i]; if(!raw) continue;
     if(raw.startsWith('01')){
@@ -327,7 +323,7 @@ $('#btnClearField').onclick=()=>{barcodeInp.value='';showProductInfo('');};
 
 btnScanOnce.onclick=async()=>{await listCameras();state.singleShot=true;btnScanOnce.disabled=true;btnScanOnce.textContent='Okutuluyor...';if(!state.scanning)await start();else statusEl.textContent='Tek seferlik okuma aktif';};
 
-// Elle giriş (Enter ile “Tamam”)
+// Elle giriş (Enter veya “Tamam”)
 function confirmManualBarcode(){
   const code=(barcodeInp.value||'').trim();
   if(!code){barcodeInp.focus();return;}
@@ -352,7 +348,7 @@ qtyInp.addEventListener('pointerdown',()=>{ setTimeout(()=>qtyInp.select(),0); }
 // Ekle
 $('#btnAdd').onclick=()=>{ upsert(barcodeInp.value.trim(),qtyInp.value); barcodeInp.value=''; qtyInp.value=1; showProductInfo(''); barcodeInp.focus(); };
 
-// ---- İsimle arama (mevcut sürüm) ----
+// ---- İsimle arama — sadece barkodlu sonuçlar (tekilleştirilmiş) ----
 let searchTimer=null;
 searchInput.addEventListener('input', ()=>{ clearTimeout(searchTimer); searchTimer=setTimeout(runSearch,150); });
 function highlightName(name,q){ const nf=trFold(name), i=nf.indexOf(q); if(i<0) return name; return name.substring(0,i)+'<b>'+name.substring(i,i+q.length)+'</b>'+name.substring(i+q.length); }
@@ -360,20 +356,20 @@ function runSearch(){
   const q = trFold(searchInput.value.trim());
   searchResults.innerHTML='';
   if(!q){ return; }
-  const starts=[], contains=[];
+  const seen=new Set();
+  const rows=[];
   for(const [code,info] of Object.entries(productMap)){
-    const name = info.name || ''; const nf=trFold(name); if(!nf) continue;
-    if(nf.startsWith(q)) starts.push({code,name,price:info.price||''});
-    else if(nf.includes(q)) contains.push({code,name,price:info.price||''});
-    if(starts.length+contains.length>=200) break;
+    if(!isEAN(code)) continue; // stok kodlarını at
+    const name=info.name||''; const nf=trFold(name); if(!nf) continue;
+    if(nf.includes(q)){ if(!seen.has(code)){ seen.add(code); rows.push({barcode:code,name,price:info.price||''}); } }
+    if(rows.length>=200) break;
   }
-  const out = starts.concat(contains).slice(0,50);
-  if(!out.length){ searchResults.innerHTML='<div class="muted" style="margin-top:8px">Sonuç bulunamadı.</div>'; return; }
-  out.forEach(row=>{
+  if(!rows.length){ searchResults.innerHTML='<div class="muted" style="margin-top:8px">Barkodlu sonuç bulunamadı.</div>'; return; }
+  rows.slice(0,50).forEach(row=>{
     const div=document.createElement('div'); div.className='result';
-    div.innerHTML=`<div><div class="rs-name">${highlightName(row.name,q)}</div><div class="muted">${row.price||'—'}</div></div><div class="rs-code">${row.code}</div>`;
-    div.onclick=()=>{ try{navigator.clipboard&&navigator.clipboard.writeText(row.code);}catch(_){}
-      barcodeInp.value=row.code; showProductInfo(row.code); safePlay(beep); barcodeInp.scrollIntoView({behavior:'smooth',block:'center'}); };
+    div.innerHTML=`<div class="rs-left"><div class="rs-name">${highlightName(row.name,q)}</div><div class="muted">${row.price||'—'}</div></div><div class="rs-meta">${row.barcode}</div>`;
+    div.onclick=()=>{ try{navigator.clipboard&&navigator.clipboard.writeText(row.barcode);}catch(_){}
+      barcodeInp.value=row.barcode; showProductInfo(row.barcode); safePlay(beep); barcodeInp.scrollIntoView({behavior:'smooth',block:'center'}); };
     searchResults.appendChild(div);
   });
 }
