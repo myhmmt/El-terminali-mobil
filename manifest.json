@@ -1,7 +1,7 @@
 {
   "name": "Genç Gross Mobil Terminal",
   "short_name": "Gross Terminal",
-  "start_url": ".",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1C2AAE",
