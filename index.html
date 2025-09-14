@@ -3,122 +3,129 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Genç Gross Mobil Terminal</title>
-
-  <!-- PWA -->
+  <title>Genç GROSS • Mobil Terminal</title>
+  <meta name="theme-color" content="#0b1220"/>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" sizes="192x192" href="icon-192.png">
-  <link rel="icon" sizes="512x512" href="icon-512.png">
-  <meta name="theme-color" content="#0a2bff"/>
-
   <style>
     :root{
-      --bg:#0b1220; --card:#101a2e; --text:#fff; --muted:#9cb0d2;
-      --blue:#0a2bff; --orange:#ff6a00; --ok:#16c47f; --warn:#ff4d4f
+      --bg:#0b1220; --card:#16233f; --text:#fff; --muted:#9cb0d2;
+      --blue:#1a54ff; --orange:#ff7a00; --ok:#17c964; --warn:#ff5d5d;
     }
-    *{box-sizing:border-box} body{margin:0;font-family:system-ui;background:var(--bg);color:var(--text)}
-    header{background:linear-gradient(90deg,var(--orange),var(--blue));
-      padding:14px 10px; text-align:center; font-weight:700; letter-spacing:.3px}
-    header span{background:#00000022;padding:6px 10px;border-radius:10px}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,Segoe UI,Roboto;background:var(--bg);color:var(--text)}
+    header{position:sticky;top:0;background:#0a1a5a;padding:10px 14px;z-index:10}
+    header h1{margin:0;font-size:18px;letter-spacing:.2px}
+    header small{color:#cfe1ff}
     .wrap{max-width:900px;margin:auto;padding:10px}
     .card{background:var(--card);border-radius:14px;padding:12px;margin:10px 0}
-    h3{margin:4px 0 10px 0}
     .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    select,input,button{border-radius:10px;border:1px solid #22325b;background:#0f1a31;color:var(--text);padding:10px}
-    input::placeholder{color:#6f83ad}
-    button{cursor:pointer;border:none}
-    .primary{background:var(--blue)} .good{background:var(--ok)} .warn{background:var(--warn)}
-    .chip{display:inline-block;background:#0f1d38;border:1px solid #20355f;color:var(--muted);
-      border-radius:999px;padding:3px 9px;font-size:12px;margin-right:6px}
-    .videoBox{position:relative;background:#000;border-radius:12px;overflow:hidden}
-    video{display:block;width:100%;max-height:320px}
-    .roi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-    .roi:after{content:"";width:70%;height:32%;border:2px solid #fff;border-radius:10px;
-      box-shadow:0 0 0 200vmax rgba(0,0,0,.45) inset}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{border-bottom:1px solid #22325b;padding:8px}
-    th{color:#9cb0d2;text-align:left} .right{text-align:right}
-    .mini{padding:8px 10px}
-    .badge{font-weight:700;color:var(--orange)}
-    a.link{color:#9cb0d2}
+    label{font-size:13px;color:#c6d6ff}
+    select,input,button{border-radius:10px;border:1px solid #2a3b69;background:#0f1c35;color:#fff}
+    input{padding:10px}
+    button{padding:10px 14px;border:none;cursor:pointer}
+    .primary{background:var(--blue)}
+    .good{background:var(--ok);color:#042414}
+    .warn{background:var(--warn);color:#2b0b0b}
+    .orange{background:var(--orange)}
+    .chip{display:inline-block;background:#0f1c35;border:1px solid #2a3b69;color:#a9bce8;
+      border-radius:999px;padding:4px 10px;margin-right:6px;font-size:12px}
+    video{width:100%;max-height:320px;background:#000;border-radius:12px;display:block}
+    .videoBox{position:relative}
+    .roi{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;pointer-events:none}
+    .roi:after{content:"";width:70%;height:32%;border:2px solid rgba(255,255,255,.85);border-radius:12px;
+      box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{border-bottom:1px solid #293a67;padding:8px}
+    th{color:#9cb0d2;text-align:left}
+    .right{text-align:right}
+    .muted{color:var(--muted);font-size:12px}
   </style>
 </head>
 <body>
+  <header>
+    <h1>GENÇ GROSS • <small>Mobil Terminal</small></h1>
+  </header>
 
-<header><span>GENÇ GROSS • MOBİL TERMINAL</span></header>
-<div class="wrap">
+  <div class="wrap">
 
-  <!-- KAMERA -->
-  <div class="card">
-    <div class="row">
-      <label for="cameraSelect">Kamera:</label>
-      <select id="cameraSelect" class="mini"></select>
-      <button id="btnStart" class="primary">Kamerayı Başlat</button>
-      <button id="btnStop">Durdur</button>
-      <button id="btnSingle" style="background:var(--orange)">👉 Tek Okut</button>
+    <!-- Kamera -->
+    <div class="card">
+      <div class="row">
+        <label>Kamera:</label>
+        <select id="cameraSelect"></select>
+        <button id="btnStart" class="primary">Kamerayı Başlat</button>
+        <button id="btnStop">Durdur</button>
+        <button id="btnOneShot" class="orange">👉 Tek Okut</button>
+      </div>
+      <div class="videoBox">
+        <video id="video" playsinline autoplay muted></video>
+        <div class="roi"></div>
+      </div>
+      <div style="margin-top:6px">
+        <span id="scanStatus" class="chip">Durduruldu</span>
+        <span id="tech" class="chip">Motor: -</span>
+        <span id="fps" class="chip">FPS: -</span>
+      </div>
+      <div class="muted">İpucu: Barkodu kutunun içinde, 15–25 cm mesafe, iyi ışık.</div>
     </div>
-    <div class="videoBox" style="margin-top:8px">
-      <video id="video" playsinline autoplay muted></video>
-      <div class="roi"></div>
-    </div>
-    <div style="margin-top:8px">
-      <span id="st" class="chip">Hazır</span>
-      <span id="eng" class="chip">Motor: BarcodeDetector</span>
-      <span id="fps" class="chip">FPS: -</span>
-    </div>
-    <div class="chip">İpucu: Barkodu kutunun içinde, 15–25 cm mesafe, iyi ışık.</div>
-  </div>
 
-  <!-- GİRİŞ / EKLEME -->
-  <div class="card">
-    <h3>Barkod & Adet</h3>
-    <div class="row">
-      <input id="barcode" inputmode="numeric" pattern="[0-9]*" type="tel"
-             placeholder="Barkod" style="flex:1;min-width:220px">
-      <button id="btnClearBarcode" class="mini">Temizle</button>
-    </div>
-    <div class="row" style="margin-top:6px">
-      <button id="btnMinus" class="mini">-1</button>
-      <input id="qty" type="number" value="1" min="1" style="width:100px">
-      <button id="btnPlus" class="mini">+1</button>
-      <button id="btnAdd" class="good">Ekle</button>
-      <button id="btnUndo">Geri Al</button>
-    </div>
-    <div style="margin-top:8px">
-      Ürün: <span id="pName" class="badge">—</span>
-      · Fiyat: <span id="pPrice" class="badge">—</span>
-    </div>
-    <div style="margin-top:10px" class="row">
+    <!-- Barkod & adet -->
+    <div class="card">
+      <h3 style="margin:4px 0 10px">Barkod & Adet</h3>
+      <div class="row">
+        <input id="barcode" inputmode="numeric" pattern="[0-9]*" placeholder="Barkod" style="flex:1;min-width:220px">
+        <button id="btnClearCode">Temizle</button>
+        <button id="btnManualOk" class="orange">Tamam</button>
+      </div>
+
+      <div class="row">
+        <button id="btnMinus">-1</button>
+        <input id="qty" type="number" value="1" min="1" style="width:110px;text-align:center">
+        <button id="btnPlus">+1</button>
+        <button id="btnAdd" class="good">Ekle</button>
+        <button id="btnUndo">Geri Al</button>
+      </div>
+
+      <div class="row">
+        <div>Ürün: <b id="pName" style="color:#ffb37a">—</b> · Fiyat: <b id="pPrice" style="color:#ffb37a">—</b></div>
+      </div>
+
       <label>Dosya Adı:</label>
-      <input id="filename" value="sayim" style="width:220px">
-      <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
-      <button id="btnCSV">CSV Olarak Dışa Aktar</button>
-      <button id="btnClear" class="warn">Listeyi Temizle</button>
+      <input id="filename" placeholder="sayim" style="width:60%">
+
+      <div class="row" style="margin-top:10px">
+        <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
+        <button id="btnCSV">CSV Olarak Dışa Aktar</button>
+        <button id="btnClearList" class="warn">Listeyi Temizle</button>
+      </div>
+
+      <table>
+        <thead><tr><th>Barkod</th><th>İsim</th><th class="right">Adet</th><th></th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
     </div>
 
-    <table>
-      <thead>
-        <tr><th>Barkod</th><th>İsim</th><th class="right">Adet</th><th></th></tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    <div style="margin-top:6px">Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span></div>
-  </div>
-
-  <!-- ÜRÜN VERİSİ -->
-  <div class="card">
-    <h3>Ürün Verisi Yükle (opsiyonel)</h3>
-    <div class="chip">GDF/TXT/CSV (ERP çıktısı). Format: <code>barkod;isim;fiyat</code> · Fiyat virgüllü olabilir (11,90)</div>
-    <div class="row" style="margin-top:8px">
-      <input id="fileInput" type="file" accept=".txt,.csv,.json,.gdf">
-      <button id="btnClearProducts" class="mini">Ürün Verisini Temizle</button>
-      <span class="chip"><span id="productCount">0</span> ürün yüklü</span>
+    <!-- Ürün verisi -->
+    <div class="card">
+      <h3 style="margin:4px 0 10px">Ürün Verisi Yükle (opsiyonel)</h3>
+      <div class="muted">GDF/TXT/CSV (ERP çıktısı). Format: <code>barkod;isim;fiyat</code> · Fiyat virgüllü olabilir (ör: 11,90).</div>
+      <div class="row" style="margin-top:8px">
+        <input type="file" id="fileInput" accept=".csv,.txt,.gdf,.json">
+        <button id="btnClearDB">Ürün Verisini Temizle</button>
+        <span class="chip" id="dbCount">0 ürün yüklü</span>
+      </div>
     </div>
+
+    <audio id="beepOk" src="beep.ogg" preload="auto"></audio>
+    <audio id="beepErr" src="notfound.ogg" preload="auto"></audio>
   </div>
 
-  <audio id="beep" src="beep.ogg" preload="auto"></audio>
-</div>
-
-<script src="app.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
+    }
+  </script>
 </body>
 </html>
