@@ -32,7 +32,7 @@
     .videoBox{position:relative;border-radius:12px;overflow:hidden;background:#000}
     video{display:block;width:100%;max-height:320px}
     .roi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-    .roi:after{content:"";width:68%;height:32%;border:2px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
+    .roi:after{content:"";width:68%;height:28%;border:2px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
     .qtybtn{padding:6px 10px;border:1px solid #d6daf2;background:#fff;border-radius:8px}
     .pname{font-weight:700;color:#0a7a2b}
     .pprice{font-weight:700;color:#a14900}
@@ -55,6 +55,12 @@
       <button id="btnStart" class="primary">Kamerayı Başlat</button>
       <button id="btnStop">Durdur</button>
       <button id="btnScanOnce" class="accent" style="margin-left:auto">👉 Tek Okut</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <label style="display:inline-flex;gap:6px;align-items:center">
+        <input type="checkbox" id="onlyEAN" checked> Sadece EAN (yanlış okumayı azaltır)
+      </label>
+      <label class="chip">Hassasiyet: 2 kare onay</label>
     </div>
     <div class="videoBox">
       <video id="video" playsinline autoplay muted></video>
@@ -104,7 +110,12 @@
   <!-- ÜRÜN VERİSİ -->
   <div class="card">
     <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle</h3>
-    <div class="muted">CSV/TXT (barkod;isim;fiyat), JSON veya GDF dosyası yükle.</div>
+    <div class="muted">
+      CSV/TXT (barkod;isim;fiyat), JSON veya GDF yükleyebilirsin.
+      <br><b>GDF Fiyat Sütunu (ops.)</b>:
+      <input id="gdfCol" type="number" min="1" style="width:90px" placeholder="örn. 6">
+      <small>(Boşsa satırın en sağındaki fiyat alınır)</small>
+    </div>
     <div class="row">
       <input id="productFile" type="file" accept=".gdf,.txt,.csv,.json" />
       <button id="btnClearMap" class="warn">Ürün Verisini Temizle</button>
@@ -112,6 +123,7 @@
     </div>
   </div>
 
+  <!-- Sesler -->
   <audio id="beep" src="beep.ogg" preload="auto"></audio>
   <audio id="err" preload="auto">
     <source src="error.ogg" type="audio/ogg">
