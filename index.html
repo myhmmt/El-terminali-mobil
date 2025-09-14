@@ -80,7 +80,9 @@
   <div class="card">
     <label>Barkod / Kod & Adet</label>
     <div class="row">
-      <input id="barcode" type="text" autocomplete="off" placeholder="Barkod veya Stok Kodu (örn. 50526)"
+      <!-- SAYI KLAVYESİ: inputmode="numeric" -->
+      <input id="barcode" type="text" inputmode="numeric" pattern="[0-9]*"
+             autocomplete="off" placeholder="Barkod veya Stok Kodu"
              style="flex:1;min-width:220px" />
       <button id="btnComplete" class="accent">Tamam</button>
       <button id="btnClearField">Temizle</button>
@@ -115,12 +117,8 @@
   <div class="card">
     <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle</h3>
     <div class="muted">
-      CSV/TXT (**Stok kodu;Stok ismi;…;Fiyat 1**) veya JSON/GDF yükleyebilirsin.
-      <br><b>CSV Fiyat Sütunu (ops.)</b>:
-      <input id="csvPriceCol" type="number" min="1" style="width:90px" placeholder="örn. 5">
-      <small>(Boşsa “Fiyat 1” otomatik bulunur.)</small>
-      <br><b>GDF Fiyat Sütunu (ops.)</b>:
-      <input id="gdfCol" type="number" min="1" style="width:90px" placeholder="örn. 6">
+      CSV/TXT (ör. <b>Stok kodu;Stok ismi;…;Fiyat 1</b>) veya JSON/GDF yükleyebilirsin.
+      <br>Yükledikten sonra veri cihazda saklanır; sayfayı yenilesen de kalır.
     </div>
     <div class="row">
       <input id="productFile" type="file" accept=".gdf,.txt,.csv,.json" />
