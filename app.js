@@ -101,15 +101,22 @@ async function runNativeLoop(){
   loop();
 }
 
+// === DÜZELTİLEN KISIM: Kamera okumasında doğru sesi çal ===
 function onCode(text){
   if(!text) return;
   const now=performance.now();
   if(text===duplicateGuard.code && now<duplicateGuard.until) return;
   duplicateGuard={code:text,until:now+1500};
 
-  barcodeInp.value=text; showProductInfo(text);
-  try{ beep.currentTime=0; beep.play(); }catch(_){}
-  if(navigator.vibrate) navigator.vibrate(30);
+  barcodeInp.value=text;
+  showProductInfo(text);
+
+  const found = !!productMap[text];
+  try{
+    (found ? beep : err).currentTime = 0;
+    (found ? beep : err).play();
+  }catch(_){}
+  if(navigator.vibrate) navigator.vibrate(found ? 30 : 80);
 
   // Tek seferlik mod kapat
   if(state.singleShot){
@@ -119,7 +126,7 @@ function onCode(text){
     state.singleShot=false;
   }
 
-  // Manuel devam: adet’e geç
+  // Manuel akış: adet’e geç
   qtyInp.focus(); setTimeout(()=>qtyInp.select(),0);
 }
 
@@ -175,7 +182,7 @@ function parseCSV(txt){
   return map;
 }
 
-// Fiyat normalizasyonu (11,90 gibi)
+// Fiyat normalizasyonu
 function normPriceStr(p){
   if(!p) return {num:0,disp:''};
   p = p.replace(/\s+/g,'');      // boşluk
@@ -187,7 +194,7 @@ function normPriceStr(p){
   return {num:n,disp: n? n.toFixed(2).replace('.',',') : ''};
 }
 
-// GDF (işaretlediğin sütun fiyat) – sağdan en mantıklı fiyatı al
+// GDF (sağdan fiyat çıkarımı)
 function priceFromTextRightmost(txt){
   const re=/\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}/g;
   const matches=[]; let m;
