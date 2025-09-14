@@ -1,4 +1,4 @@
-/* Genç Gross Mobil Terminal — stokk.txt şeması desteği (Stok kodu;Stok ismi;...;Fiyat 1 + "bar kodu" satırı) */
+/* Genç Gross Mobil Terminal — güçlü eşleştirme + sayısal klavye + miktarda Enter ile ekleme */
 const state = { items:{}, scanning:false, currentDeviceId:null, singleShot:false };
 let mediaStream=null, rafId=null, frames=0, duplicateGuard={code:null,until:0}, lastOp=null;
 let detector=null, off=null, octx=null;
@@ -12,7 +12,7 @@ const tbody=$('#tbody'), totalRows=$('#totalRows'), totalQty=$('#totalQty'), fil
 const beep=$('#beep'), err=$('#err'), btnScanOnce=$('#btnScanOnce');
 const productNameEl=$('#productName'), productPriceEl=$('#productPrice');
 const productFile=$('#productFile'), mapStat=$('#mapStat');
-const onlyEANBox=$('#onlyEAN'), gdfColInp=$('#gdfCol'), csvPriceColInp=$('#csvPriceCol');
+const onlyEANBox=$('#onlyEAN');
 const searchInput=$('#searchName'), searchResults=$('#searchResults');
 
 // ---- utils ----
@@ -23,6 +23,7 @@ function trFold(s=''){return s.toLowerCase()
   .replace(/ı/g,'i').replace(/İ/g,'i').replace(/ş/g,'s').replace(/Ş/g,'s')
   .replace(/ğ/g,'g').replace(/Ğ/g,'g').replace(/ç/g,'c').replace(/Ç/g,'c')
   .replace(/ö/g,'o').replace(/Ö/g,'o').replace(/ü/g,'u').replace(/Ü/g,'u');}
+const stripDigits = s => String(s||'').replace(/\D/g,'');
 
 // ---- Liste ----
 function render(){ tbody.innerHTML=''; let sum=0;
@@ -55,8 +56,6 @@ async function listCameras(){
 }
 selCam.onchange=()=>{state.currentDeviceId=selCam.value; if(state.scanning) start();};
 onlyEANBox.onchange=()=>{localStorage.setItem('onlyEAN', onlyEANBox.checked?'1':'0'); detector=null;};
-gdfColInp.onchange = ()=>{localStorage.setItem('gdfPriceCol', gdfColInp.value.trim());};
-csvPriceColInp.onchange=()=>{localStorage.setItem('csvPriceCol', csvPriceColInp.value.trim());};
 
 function getFormats(){ let fmts=['ean_13','ean_8']; if(!onlyEANBox.checked) fmts=fmts.concat(['code_128','code_39','itf','upc_e','upc_a']); return fmts; }
 
@@ -85,7 +84,7 @@ function normalizeAndValidate(text){
   const digits=(text||'').trim().replace(/\D/g,'');
   if(digits.length===13 && isValidEAN13(digits)) return digits;
   if(digits.length===8  && isValidEAN8(digits))  return digits;
-  if(!onlyEANBox.checked && /^\d{3,20}$/.test(digits)) return digits; // non-EAN numeric code
+  if(!onlyEANBox.checked && /^\d{3,20}$/.test(digits)) return digits; // numerik kod
   return null;
 }
 async function runNativeLoop(){
@@ -124,7 +123,7 @@ function onCodeAccepted(code){
   duplicateGuard={code,until:now+1500};
 
   barcodeInp.value=code; showProductInfo(code);
-  const found=!!productMap[code];
+  const found=!!smartLookup(code); // akıllı eşleşme
   safePlay(found?beep:err); vibrate(found?30:80);
 
   if(state.singleShot){
@@ -136,15 +135,26 @@ function onCodeAccepted(code){
   qtyInp.focus(); setTimeout(()=>qtyInp.select(),0);
 }
 
-// ---- Ürün göster ----
+// ---- Akıllı ürün eşleştirme ----
+function smartLookup(key){
+  if(!key) return null;
+  // 1) olduğu gibi
+  if(productMap[key]) return productMap[key];
+  // 2) sadece rakamlar
+  const d=stripDigits(key); if(d && productMap[d]) return productMap[d];
+  // 3) baştaki sıfırları kırp
+  const dz=d.replace(/^0+(?=\d)/,''); if(dz && productMap[dz]) return productMap[dz];
+  return null;
+}
+
+// Ürün bilgisini gösterirken de akıllı bak
 function showProductInfo(code){
-  const key=(code||'').trim();
-  const p=productMap[key];
+  const p=smartLookup(code);
   if(p){ productNameEl.textContent=p.name||'—'; productPriceEl.textContent=p.price||'—'; }
   else { productNameEl.textContent='Bulunamadı'; productPriceEl.textContent='—'; }
 }
 
-// ---- Ürün verisi yükleme ----
+// ---- Ürün verisi yükleme (STOKK/CSV/JSON/GDF) ----
 $('#btnClearMap').onclick=()=>{productMap={};localStorage.removeItem('productMap');mapStat.textContent='0 ürün yüklü';showProductInfo('');};
 productFile.onchange=async(e)=>{
   const file=e.target.files?.[0]; if(!file) return;
@@ -155,9 +165,9 @@ productFile.onchange=async(e)=>{
 function loadProductText(txt,src='metin'){
   try{
     let map={};
-    const linesFirst=(txt.split(/\r?\n/)[0]||'').toLowerCase();
-    const looksStokk = linesFirst.includes('stok kodu') && linesFirst.includes('stok ismi');
-    if(looksStokk)      map=parseSTOKK(txt);              // yeni şema
+    const firstLine=(txt.split(/\r?\n/)[0]||'').toLowerCase();
+    const looksStokk = firstLine.includes('stok kodu') && firstLine.includes('stok ismi');
+    if(looksStokk)      map=parseSTOKK(txt);
     else if(txt.startsWith('<SIGNATURE=GNDPLU.GDF>')) map=parseGDF(txt);
     else if(txt.trim().startsWith('{'))               map=parseJSON(txt);
     else                                              map=parseCSVGeneric(txt);
@@ -167,7 +177,7 @@ function loadProductText(txt,src='metin'){
     productMap=map; localStorage.setItem('productMap',JSON.stringify(productMap));
     mapStat.textContent=count+' ürün yüklü'; showProductInfo(barcodeInp.value.trim());
     alert(`${count} ürün yüklendi (${src}).`);
-  }catch(err){console.error(err);alert('Veri çözümlenemedi. Lütfen TXT/CSV (uygun başlıklar) veya JSON/GDF kullanın.');}
+  }catch(err){console.error(err);alert('Veri çözümlenemedi. Uygun başlıklı TXT/CSV, JSON veya GDF yükleyin.');}
 }
 
 function parseJSON(txt){
@@ -179,72 +189,53 @@ function parseJSON(txt){
   return map;
 }
 
-// --- STOKK: "Stok kodu;Stok ismi;...;Fiyat 1" + ikinci satırda üçüncü sütunda "bar kodu"
+// STOKK biçimi: "Stok kodu;Stok ismi; ... ; Fiyat 1" (+ varsa barkod sütunu)
 function parseSTOKK(txt){
-  const lines = txt.split(/\r?\n/).filter(x=>x.trim().length);
-  if(lines.length<3) return {};
+  const lines=txt.split(/\r?\n/).filter(x=>x.trim().length);
+  if(lines.length<2) return {};
   const sep=';';
-
-  const head1 = lines[0].split(sep).map(s=>s.trim().toLowerCase());
-  const head2 = lines[1].split(sep).map(s=>s.trim().toLowerCase());
-
-  // sütun indeksleri
-  let ixCode   = head1.findIndex(h=>/stok\s*kodu|kod/.test(h)); if(ixCode<0) ixCode=0;
-  let ixName   = head1.findIndex(h=>/stok\s*ismi|stok\s*adi|ad|isim|name/.test(h)); if(ixName<0) ixName=1;
-  let ixPrice  = head1.findIndex(h=>/fiyat/.test(h)); if(ixPrice<0) ixPrice=4;
-
-  // "bar kodu" 2. satırda olabilir
-  let ixBarcode = head2.findIndex(h=>/bar\s*kodu|barkod|barcode/.test(h));
-  if(ixBarcode<0){ // bazen aynı başlık 1. satıra da gelebilir
-    ixBarcode = head1.findIndex(h=>/bar\s*kodu|barkod|barcode/.test(h));
+  const head=lines[0].split(sep).map(s=>s.trim().toLowerCase());
+  let ixCode=head.findIndex(h=>/stok\s*kodu|kod/.test(h));     if(ixCode<0) ixCode=0;
+  let ixName=head.findIndex(h=>/stok\s*ismi|stok\s*adi|ad|isim|name/.test(h)); if(ixName<0) ixName=1;
+  let ixPrice=head.findIndex(h=>/fiyat/.test(h));              if(ixPrice<0) ixPrice=2;
+  let ixBarcode=head.findIndex(h=>/bar\s*kodu|barkod|barcode/.test(h)); // varsa 1. satırda
+  if(ixBarcode<0 && lines.length>1){
+    const head2=lines[1].split(sep).map(s=>s.trim().toLowerCase());
+    ixBarcode=head2.findIndex(h=>/bar\s*kodu|barkod|barcode/.test(h));
   }
-  if(ixBarcode<0) ixBarcode = 2; // varsayım: 3. sütun
-
-  const fixedPriceCol = Number(localStorage.getItem('csvPriceCol')||csvPriceColInp.value||'0')||0;
-  if(fixedPriceCol>0) ixPrice=fixedPriceCol-1;
 
   const map={};
-  for(let i=2;i<lines.length;i++){
+  for(let i=1;i<lines.length;i++){
     const cols=lines[i].split(sep);
-    if(cols.length < Math.max(ixCode,ixName,ixPrice,ixBarcode)+1) continue;
-
-    const rawCode   =(cols[ixCode]||'').trim();
-    const rawName   =(cols[ixName]||'').trim();
-    const rawBarcode=(cols[ixBarcode]||'').trim();
-    const rawPrice  =(cols[ixPrice]||'').trim();
+    if(cols.length<Math.max(ixCode,ixName,ixPrice)+1) continue;
+    const rawCode=(cols[ixCode]||'').trim();
+    const rawName=(cols[ixName]||'').trim();
+    const rawPrice=(cols[ixPrice]||'').trim();
+    const rawBarcode = (ixBarcode>=0 ? (cols[ixBarcode]||'').trim() : '');
 
     if(!rawName && !rawCode && !rawBarcode) continue;
 
-    const name = cleanupName(rawName);
-    const price = normPriceFlexible(rawPrice).disp;
+    const name=cleanupName(rawName);
+    const price=normPriceFlexible(rawPrice).disp;
 
-    // Stok kodu anahtarı (alfa-nümerik ve nokta/arti içerebilir -> sadeleştir)
-    const keyCode = rawCode.replace(/\s+/g,'');
-    if(validKey(keyCode)) map[keyCode] = {name, price};
+    const keyCode=rawCode.replace(/\s+/g,'');
+    if(validKey(keyCode)) map[keyCode] = {name,price};
 
-    // Barkod anahtarı (sadece rakamlar, 8–14 hane)
-    const digits = rawBarcode.replace(/\D/g,'');
-    if(/^\d{8,14}$/.test(digits)) map[digits] = {name, price};
+    const digits=stripDigits(rawBarcode);
+    if(/^\d{8,14}$/.test(digits)) map[digits] = {name,price};
   }
   return map;
 }
 
 function validKey(k){ return k && k.length>=3 && k.length<=24; }
-function cleanupName(s){ 
-  // olası bozuk Türkçe karakterleri dokunmadan geç; sadece fazla boşlukları toparla
-  return String(s||'').replace(/\s{2,}/g,' ').trim();
-}
+function cleanupName(s){ return String(s||'').replace(/\s{2,}/g,' ').trim(); }
 
-// Genel CSV: "kod|barkod;isim;fiyat" gibi
 function parseCSVGeneric(txt){
   const lines=txt.split(/\r?\n/).filter(x=>x.trim().length);
   if(!lines.length) return {};
   const sep=lines[0].includes(';')?';':',';
   let start=0, colCode=0, colName=1, colPrice=2;
 
-  const fixedPriceCol = Number(localStorage.getItem('csvPriceCol')||csvPriceColInp.value||'0')||0;
-
-  // başlık algıla
   const header=lines[0].split(sep).map(x=>x.trim().toLowerCase());
   const looksHeader = header.some(h=>/barkod|barcode|kod|plu|sku/.test(h)) || header.some(h=>/isim|ad|name/.test(h)) || header.some(h=>/fiyat|price|tutar/.test(h));
   if(looksHeader){
@@ -253,7 +244,6 @@ function parseCSVGeneric(txt){
     colName = header.findIndex(h=>/isim|ad|name/.test(h));               if(colName<0) colName=1;
     colPrice= header.findIndex(h=>/fiyat|price|tutar/.test(h));          if(colPrice<0) colPrice=2;
   }
-  if(fixedPriceCol>0) colPrice=fixedPriceCol-1;
 
   const map={};
   for(let i=start;i<lines.length;i++){
@@ -264,7 +254,7 @@ function parseCSVGeneric(txt){
 
     if(code && /^[A-Za-z0-9\-_.]+$/.test(code)) map[code]={name,price};
     else{
-      code = (cols[colCode]||'').replace(/\s+/g,'');
+      code=(cols[colCode]||'').replace(/\s+/g,'');
       if(/^\d{8,14}$/.test(code)) map[code]={name,price};
     }
   }
@@ -274,19 +264,12 @@ function parseCSVGeneric(txt){
 // Fiyat normalizasyonu
 function normPriceFlexible(p){
   if(p===undefined || p===null) return {num:0,disp:''};
-  let s = String(p).trim();
+  let s=String(p).trim();
   if(s==='********') return {num:0,disp:''};
 
-  // Sadece rakam: kuruş varsay (/100)
   if(/^\d{3,9}$/.test(s)){ const num=Number(s)/100; return isFinite(num)?{num,disp:num.toFixed(2).replace('.',',')}:{num:0,disp:''}; }
-
-  s = s.replace(/[₺\s]/g,'');
-  if(s.includes(',')){
-    s = s.replace(/\./g,'');
-    s = s.replace(/^0+(?=\d)/,'');
-    let n = Number(s.replace(',','.')); if(!isFinite(n)) n=0;
-    return {num:n,disp: n? n.toFixed(2).replace('.',',') : ''};
-  }
+  s=s.replace(/[₺\s]/g,'');
+  if(s.includes(',')){ s=s.replace(/\./g,''); s=s.replace(/^0+(?=\d)/,''); let n=Number(s.replace(',','.')); if(!isFinite(n)) n=0; return {num:n,disp:n? n.toFixed(2).replace('.',',') : ''}; }
   if(/^\d+\.\d{2}$/.test(s)){ const n=Number(s); return isFinite(n)?{num:n,disp:n.toFixed(2).replace('.',',')}:{num:0,disp:''}; }
   return {num:0,disp:''};
 }
@@ -295,7 +278,6 @@ function normPriceFlexible(p){
 function parseGDF(txt){
   const lines=txt.split(/\r?\n/);
   const names={}; let lastPLU=null; const map={};
-  const fixedCol = Number(localStorage.getItem('gdfPriceCol')||gdfColInp.value||'0')||0;
 
   for(let i=0;i<lines.length;i++){
     const raw=lines[i]; if(!raw) continue;
@@ -305,14 +287,9 @@ function parseGDF(txt){
       continue;
     }
     if(raw.startsWith('02')){
-      let priceDisp='';
-      if(fixedCol>0){
-        const cols=raw.trim().split(/\s{2,}/);
-        const pick=cols[fixedCol-1]||'';
-        priceDisp = normPriceFlexible(pick).disp || priceFromTextRightmost(raw);
-      }else{
-        priceDisp = priceFromTextRightmost(raw) || (lines[i+1] && priceFromTextRightmost(lines[i+1])) || (lines[i-1] && priceFromTextRightmost(lines[i-1])) || '';
-      }
+      const priceDisp = priceFromTextRightmost(raw) ||
+                        (lines[i+1] && priceFromTextRightmost(lines[i+1])) ||
+                        (lines[i-1] && priceFromTextRightmost(lines[i-1])) || '';
       const nums=(raw.match(/\b\d{8,14}\b/g)||[]);
       const candidates=nums.filter(n=>n!==lastPLU);
       let bc=candidates.filter(n=>n.length===13||n.length===12).pop()
@@ -350,26 +327,32 @@ $('#btnClearField').onclick=()=>{barcodeInp.value='';showProductInfo('');};
 
 btnScanOnce.onclick=async()=>{await listCameras();state.singleShot=true;btnScanOnce.disabled=true;btnScanOnce.textContent='Okutuluyor...';if(!state.scanning)await start();else statusEl.textContent='Tek seferlik okuma aktif';};
 
-// Elle giriş: barkodsuz kodlar dahil
+// Elle giriş (Enter ile “Tamam”)
 function confirmManualBarcode(){
   const code=(barcodeInp.value||'').trim();
   if(!code){barcodeInp.focus();return;}
   showProductInfo(code);
-  const found=!!productMap[code];
+  const found=!!smartLookup(code);
   safePlay(found?beep:err); vibrate(found?30:80);
   qtyInp.focus(); setTimeout(()=>qtyInp.select(),0);
 }
 barcodeInp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); confirmManualBarcode(); } });
 if(btnComplete) btnComplete.onclick=confirmManualBarcode;
 
-// Adet alanı tıklanınca seç
+// Adet alanında Enter → EKLE
+qtyInp.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    $('#btnAdd').click();
+  }
+});
 qtyInp.addEventListener('focus',()=>{ setTimeout(()=>qtyInp.select(),0); });
 qtyInp.addEventListener('pointerdown',()=>{ setTimeout(()=>qtyInp.select(),0); });
 
 // Ekle
 $('#btnAdd').onclick=()=>{ upsert(barcodeInp.value.trim(),qtyInp.value); barcodeInp.value=''; qtyInp.value=1; showProductInfo(''); barcodeInp.focus(); };
 
-// ---- İSİMLE ARAMA (vurgulu, başta geçenler önde) ----
+// ---- İsimle arama (mevcut sürüm) ----
 let searchTimer=null;
 searchInput.addEventListener('input', ()=>{ clearTimeout(searchTimer); searchTimer=setTimeout(runSearch,150); });
 function highlightName(name,q){ const nf=trFold(name), i=nf.indexOf(q); if(i<0) return name; return name.substring(0,i)+'<b>'+name.substring(i,i+q.length)+'</b>'+name.substring(i+q.length); }
@@ -399,7 +382,5 @@ function runSearch(){
 try{
   const pm=localStorage.getItem('productMap'); if(pm){productMap=JSON.parse(pm); mapStat.textContent=Object.keys(productMap).length+' ürün yüklü';}
   const only=localStorage.getItem('onlyEAN'); if(only!==null) onlyEANBox.checked = (only==='1');
-  const gc=localStorage.getItem('gdfPriceCol'); if(gc){gdfColInp.value=gc;}
-  const cc=localStorage.getItem('csvPriceCol'); if(cc){csvPriceColInp.value=cc;}
 }catch{}
 load(); listCameras();
