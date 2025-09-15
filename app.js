@@ -1,95 +1,70 @@
-// ====== Durum & Elemanlar ======
-const state = { items:{}, scanning:false, currentDeviceId:null, singleShot:false };
-let mediaStream=null, rafId=null, frames=0, duplicateGuard={code:null,until:0}, lastOp=null;
-let detector=null, off=null, octx=null;
+// ====== STATE ======
+const state={items:{},scanning:false,currentDeviceId:null,singleShot:false};
+let mediaStream=null,rafId=null,frames=0,duplicateGuard={code:null,until:0},lastOp=null,detector=null,off=null,octx=null;
+let productMap={};
 
-// Ürün sözlükleri
-let productMap = {};     // barcode -> {name, price, barcode, code}
-let productByCode = {};  // stockCode -> aynı obje
+// ====== EL ======
+const $ = sel => document.querySelector(sel);
+const selCam   = $('#cameraSelect');
+const video    = $('#video');
+const statusEl = $('#scanStatus');
+const fpsEl    = $('#fps');
+const inpCode  = $('#barcode');
+const inpQty   = $('#qty');
+const tbody    = $('#tbody');
+const totalRows= $('#totalRows');
+const totalQty = $('#totalQty');
+const inpFile  = $('#productFile');
+const mapStat  = $('#mapStat');
+const nameEl   = $('#productName');
+const priceEl  = $('#productPrice');
+const beep     = $('#beep');
+const errBeep  = $('#err');
+const btnOnce  = $('#btnScanOnce');
 
-// UI
-const selCam = document.getElementById('cameraSelect');
-const video  = document.getElementById('video');
-const statusEl = document.getElementById('scanStatus');
-const fpsEl  = document.getElementById('fps');
-const barcodeInp = document.getElementById('barcode');
-const qtyInp  = document.getElementById('qty');
-const tbody   = document.getElementById('tbody');
-const totalRows = document.getElementById('totalRows');
-const totalQty  = document.getElementById('totalQty');
-const filenameInp = document.getElementById('filename');
-const beep = document.getElementById('beep');
-const errorS = document.getElementById('errorS');
-const btnScanOnce = document.getElementById('btnScanOnce');
-const productNameEl = document.getElementById('productName');
-const productPriceEl = document.getElementById('productPrice');
-const productFile = document.getElementById('productFile');
-const mapStat = document.getElementById('mapStat');
-const encodingSel = document.getElementById('encoding');
-const searchName = document.getElementById('searchName');
-const searchList = document.getElementById('searchList');
-const btnOk = document.getElementById('btnOk');
-
-// ====== Yardımcılar ======
-function getProduct(key){
-  return productMap[key] || productByCode[key] || null;
-}
-function addRec({ barcode, code, name, price }){
-  const rec = { name: name||'', price: price||'', barcode: barcode||'', code: code||'' };
-  if (barcode) productMap[barcode] = rec;
-  if (code)    productByCode[code] = rec;
-}
+// ====== HELPERS ======
 function render(){
   tbody.innerHTML=''; let sum=0;
-  Object.entries(state.items).forEach(([enteredKey,q])=>{
-    sum += Number(q)||0;
-    const p = getProduct(enteredKey);
-    const shownBarcode = p?.barcode || enteredKey; // stok kodu girilmişse bile listede barkodu göster
-    const shownName    = p?.name || '—';
+  Object.entries(state.items).forEach(([c,q])=>{
+    sum+=Number(q)||0;
+    const name=(productMap[c]?.name)||'—';
     const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${shownBarcode}</td><td>${shownName}</td>
-                    <td class="right">${q}</td>
-                    <td><button onclick="del('${enteredKey}')">Sil</button></td>`;
+    tr.innerHTML=`<td>${c}</td><td>${name}</td><td class="right">${q}</td><td><button onclick="del('${c}')">Sil</button></td>`;
     tbody.appendChild(tr);
   });
-  totalRows.textContent = Object.keys(state.items).length;
-  totalQty.textContent  = sum;
+  totalRows.textContent=Object.keys(state.items).length;
+  totalQty.textContent=sum;
 }
-window.del=(c)=>{ delete state.items[c]; save(); render(); };
-function upsert(c,q){ if(!c) return; const n=Math.max(1,Number(q)||1); state.items[c]=(Number(state.items[c])||0)+n; lastOp={code:c, qty:n}; save(); render(); }
+window.del=(c)=>{delete state.items[c];save();render();}
+function upsert(c,q){ if(!c) return; const n=Math.max(1,Number(q)||1); state.items[c]=(Number(state.items[c])||0)+n; lastOp={code:c,qty:n}; save(); render(); }
 function undo(){ if(!lastOp) return; const {code,qty}=lastOp; state.items[code]=(Number(state.items[code])||0)-qty; if(state.items[code]<=0) delete state.items[code]; lastOp=null; save(); render(); }
 function save(){ localStorage.setItem('barcodeItems', JSON.stringify(state.items)); }
 function load(){ const raw=localStorage.getItem('barcodeItems'); if(raw){ try{state.items=JSON.parse(raw);}catch{} } render(); }
 
 function dl(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
-function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${(getProduct(c)?.barcode||c)};${q}`); dl((filenameInp.value||'sayim')+'.txt', lines.join('\n'), 'text/plain'); }
-function exportCSV(){ const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${(getProduct(c)?.barcode||c)},${q}`)]; dl((filenameInp.value||'sayim')+'.csv', lines.join('\n'), 'text/csv'); }
+function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((($('#filename').value)||'sayim')+'.txt', lines.join('\n'), 'text/plain'); }
+function exportCSV(){ const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)]; dl((($('#filename').value)||'sayim')+'.csv', lines.join('\n'), 'text/csv'); }
 
-function showProductInfo(key){
-  const p = getProduct(key);
-  if(p){ productNameEl.textContent=p.name||'—'; productPriceEl.textContent=p.price||'—'; }
-  else { productNameEl.textContent='Bulunamadı'; productPriceEl.textContent='—'; }
-}
-function playBeep(){ try{beep.currentTime=0;beep.play();}catch{} if(navigator.vibrate) navigator.vibrate(30); }
-function playError(){ try{errorS.currentTime=0;errorS.play();}catch{} if(navigator.vibrate) navigator.vibrate([30,40,30]); }
+function trLower(s){ return (s||'').toLocaleLowerCase('tr-TR'); }
+function playBeep(a){ try{a.currentTime=0; a.play();}catch{} }
 
-// ====== Kamera / Okuma ======
+// ====== KAMERA / BarcodeDetector ======
 async function listCameras(){
   try{
     const devices=await navigator.mediaDevices.enumerateDevices();
     const videos=devices.filter(d=>d.kind==='videoinput');
     selCam.innerHTML='';
     videos.forEach((d,i)=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||`Kamera ${i+1}`;selCam.appendChild(o);});
-    const rear=videos.find(d=>/back|rear|arka/i.test(d.label||''));state.currentDeviceId=rear?.deviceId||videos[0]?.deviceId||null;
-    if(state.currentDeviceId)selCam.value=state.currentDeviceId;
+    const rear=videos.find(d=>/back|rear|arka/i.test(d.label||'')); state.currentDeviceId=rear?.deviceId||videos[0]?.deviceId||null;
+    if(state.currentDeviceId) selCam.value=state.currentDeviceId;
   }catch(e){}
 }
-selCam.onchange=()=>{ state.currentDeviceId = selCam.value; if(state.scanning) start(); };
+selCam.onchange=()=>{ state.currentDeviceId=selCam.value; if(state.scanning) start(); };
 
 async function start(){
   stop(); statusEl.textContent='Kamera açılıyor...';
   try{
-    const constraints={video:state.currentDeviceId?{deviceId:{exact:state.currentDeviceId},width:{ideal:1920},height:{ideal:1080}}:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false};
+    const constraints={video: state.currentDeviceId?{deviceId:{exact:state.currentDeviceId},width:{ideal:1920},height:{ideal:1080}}:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}, audio:false};
     mediaStream=await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject=mediaStream; await video.play(); state.scanning=true; statusEl.textContent='Tarama aktif'; runNativeLoop(); fpsCounter();
   }catch(e){ statusEl.textContent='Tarama başlatılamadı'; }
@@ -109,181 +84,141 @@ async function runNativeLoop(){
       const rw=Math.floor(vw*0.68), rh=Math.floor(vh*0.32);
       const rx=Math.floor((vw-rw)/2), ry=Math.floor((vh-rh)/2);
       off.width=rw; off.height=rh; octx.drawImage(video,rx,ry,rw,rh,0,0,rw,rh);
-      try{
-        const d=await detector.detect(off);
-        if(d&&d.length){ onCode((d[0].rawValue||'').trim()); }
-      }catch(_){}
+      try{ const d=await detector.detect(off); if(d && d.length){ onScanned((d[0].rawValue||'').trim()); } }catch(_){}
     }
     if(state.scanning) rafId=requestAnimationFrame(loop);
   }; loop();
 }
-function onCode(text){
-  if(!text) return;
+function onScanned(code){
+  if(!code) return;
   const now=performance.now();
-  if(text===duplicateGuard.code && now<duplicateGuard.until) return;
-  duplicateGuard={code:text,until:now+1500};
-  barcodeInp.value=text; showProductInfo(text);
-  const p = getProduct(text);
-  if(p) playBeep(); else playError();
-  if(state.singleShot){ stop(); btnScanOnce.disabled=true; btnScanOnce.textContent='Okundu ✓'; setTimeout(()=>{btnScanOnce.disabled=false;btnScanOnce.textContent='👉 Tek Okut';},900); state.singleShot=false; }
+  if(code===duplicateGuard.code && now<duplicateGuard.until) return;
+  duplicateGuard={code,until:now+1500};
+
+  inpCode.value = code;
+  showProductInfo(code);
+  if(productMap[code]) playBeep(beep); else playBeep(errBeep);
+  if(navigator.vibrate) navigator.vibrate(30);
+
+  if(state.singleShot){ stop(); btnOnce.disabled=true; btnOnce.textContent='Okundu ✓'; setTimeout(()=>{btnOnce.disabled=false;btnOnce.textContent='👉 Tek Okut';},900); state.singleShot=false; }
 }
 function fpsCounter(){ let last=performance.now(); const tick=()=>{ if(!state.scanning) return; const now=performance.now(); if(now-last>=1000){ fpsEl.textContent='FPS: '+frames; frames=0; last=now; } requestAnimationFrame(tick); }; tick(); }
 
-// ====== ÜRÜN VERİSİ ======
-document.getElementById('btnClearMap').onclick=()=>{ productMap={}; productByCode={}; localStorage.removeItem('productMap'); localStorage.removeItem('productByCode'); localStorage.removeItem('productCount'); mapStat.textContent='0 ürün yüklü'; showProductInfo(''); searchList.innerHTML=''; };
+// ====== ÜRÜN BİLGİ ======
+function showProductInfo(code){
+  const p=productMap[code];
+  if(p){ nameEl.textContent=p.name||'—'; priceEl.textContent=p.price||'—'; }
+  else { nameEl.textContent='Bulunamadı'; priceEl.textContent='—'; }
+}
 
-productFile.onchange=async(e)=>{
-  const file=e.target.files?.[0]; if(!file) return;
-  let txt='';
-  try{
-    const enc=encodingSel.value||'windows-1254';
-    if(file.text && enc==='utf-8'){ txt = await file.text(); }
-    else{ const buf = await file.arrayBuffer(); txt = new TextDecoder(enc).decode(buf); }
-  }catch{ alert('Dosya okunamadı.'); return; }
-  loadProductText(txt,file.name||'dosya');
-};
+// ====== PARSE ======
+function normPriceStr(p){
+  if(!p) return '';
+  p = String(p).replace(/\s+/g,'');
+  const m = p.match(/\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}/);
+  if(!m) return '';
+  let n = m[0].replace(/\./g,'').replace(',','.');
+  let v = Number(n);
+  if(!isFinite(v)) return '';
+  return v.toFixed(2).replace('.',',');
+}
+function parseTextToMap(txt){
+  const lines = txt.split(/\r?\n/).filter(l=>l.trim().length);
+  const map = {};
+  for(const raw of lines){
+    const sep = raw.includes(';') ? ';' : '\t';
+    const cols = raw.split(sep).map(s=>s.trim());
+    if(cols.length < 2) continue;
+    const code = (cols[0]||'').replace(/\s+/g,'');
+    const name = cols[1]||'';
+    if(!code || !name) continue;
 
-function loadProductText(txt,src='metin'){
+    // fiyat: sağdan sola ilk parasal
+    let price = '';
+    for(let i=cols.length-1;i>=2;i--){
+      const p = normPriceStr(cols[i]);
+      if(p){ price = p; break; }
+    }
+    map[code] = {name, price};
+  }
+  return map;
+}
+
+// ====== DOSYA YÜKLE ======
+$('#btnClearMap').onclick = ()=>{ productMap={}; localStorage.removeItem('productMap'); mapStat.textContent='0 ürün yüklü'; showProductInfo(''); $('#searchList').innerHTML=''; };
+inpFile.onchange = async(e)=>{
+  const f = e.target.files?.[0]; if(!f) return;
+  let txt=''; try{ txt = await f.text(); }catch{ alert('Dosya okunamadı.'); return; }
   try{
-    productMap={}; productByCode={};
-    let count=0;
-    if(txt.startsWith('<SIGNATURE=GNDPLU.GDF>')) count=parseGDF(txt);
-    else if(txt.trim().startsWith('{')){
+    let map={};
+    if(txt.trim().startsWith('{')){
       const obj=JSON.parse(txt);
       for(const [k,v] of Object.entries(obj)){
-        if(typeof v==='string') addRec({barcode:k, name:v});
-        else addRec({barcode:k, name:v.name||'', price:v.price||'', code:v.code||''});
-        count++;
+        if(typeof v==='string') map[k]={name:v,price:''};
+        else map[k]={name:v.name||'',price:v.price||''};
       }
     }else{
-      count=parseCSV(txt);
+      map = parseTextToMap(txt);
     }
-    // kalıcı sakla + gerçek kayıt sayısını sakla
-    localStorage.setItem('productMap', JSON.stringify(productMap));
-    localStorage.setItem('productByCode', JSON.stringify(productByCode));
-    localStorage.setItem('productCount', String(count));
-    mapStat.textContent=count+' ürün yüklü';
-    showProductInfo(barcodeInp.value.trim());
-    alert(`${count} ürün yüklendi (${src}).`);
-  }catch(err){ console.error(err); alert('Veri çözümlenemedi. CSV/TXT (stokKodu;isim;…;fiyat), JSON veya imzalı GDF kullanın.'); }
+    productMap = map;  // ÜZERİNE YAZ
+    localStorage.setItem('productMap',JSON.stringify(productMap));
+    mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü';
+    showProductInfo(inpCode.value.trim());
+    buildSearchIndex();
+  }catch(err){ console.error(err); alert('Veri çözümlenemedi. "kod;isim;…;fiyat" biçimini kullanın.'); }
+};
+
+// ====== ARAMA ======
+let searchArr=[];
+function buildSearchIndex(){
+  searchArr = Object.entries(productMap).map(([code,obj])=>({code,name:obj.name,price:obj.price, key:(obj.name||'').toLocaleLowerCase('tr-TR')}));
 }
-
-// CSV/TXT: stokKodu;stokAdı;…;fiyat1
-// (Fiyatı bulmak için TÜM satırı tarayıp en sağdaki para desenini yakalar.)
-function parseCSV(txt){
-  const lines=txt.split(/\r?\n/).filter(x=>x.trim().length);
-  const sep=lines[0]?.includes(';')?';':',';
-  let n=0;
-  for(const L of lines){
-    const cols=L.split(sep).map(s=>s.trim());
-    if(cols.length<2) continue;
-    const code = cols[0];           // stok kodu (barkodsuz olabilir)
-    const name = cols[1];
-
-    // barkod tespiti: ilk 4 sütun içinde 8–14 haneli temiz sayı
-    const maybeNums = cols.slice(0,4).map(x=>x.replace(/\D/g,''));
-    const barcode = maybeNums.find(nm => /^\d{8,14}$/.test(nm)) || '';
-
-    // fiyat: TÜM satırdan en sağdaki para deseni
-    const price = priceFromTextRightmost(cols.join(' '));
-
-    addRec({ barcode, code, name, price });
-    n++;
-  }
-  return n;
-}
-
-// --- Fiyat normalizasyonu & çıkarımı ---
-function normPriceStr(p){ if(!p) return {num:0,disp:''}; p=p.replace(/\s+/g,''); p=p.replace(/\./g,''); p=p.replace(/^0+(?=\d)/,''); if(!/,/.test(p)) return {num:0,disp:''}; let n=Number(p.replace(',','.')); if(!isFinite(n)) n=0; return {num:n,disp: n? n.toFixed(2).replace('.',',') : ''}; }
-function priceFromTextRightmost(txt){
-  const re=/\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}/g;
-  const matches=[]; let m;
-  while((m=re.exec(txt))){ const n=normPriceStr(m[0]); if(n.num>0 && n.num<1000) matches.push({pos:m.index,disp:n.disp}); }
-  if(!matches.length) return '';
-  return matches[matches.length-1].disp;
-}
-
-// GDF: 01 (PLU+İsim), 02 (Barkod+Fiyat)
-function parseGDF(txt){
-  const lines=txt.split(/\r?\n/);
-  const names={}; let lastPLU=null; let n=0;
-  for(let i=0;i<lines.length;i++){
-    const raw=lines[i]; if(!raw) continue;
-    if(raw.startsWith('01')){
-      const parts=raw.trim().split(/\s{2,}/);
-      if(parts.length>=4){ lastPLU=parts[1]; names[lastPLU]=parts[3]; }
-      continue;
-    }
-    if(raw.startsWith('02')){
-      let priceDisp = priceFromTextRightmost(raw);
-      if(!priceDisp && lines[i+1]) priceDisp = priceFromTextRightmost(lines[i+1]);
-      if(!priceDisp && lines[i-1]) priceDisp = priceFromTextRightmost(lines[i-1]);
-      const nums=(raw.match(/\b\d{8,14}\b/g)||[]);
-      const candidates=nums.filter(n=>n!==lastPLU);
-      let bc=candidates.filter(n=>n.length===13||n.length===12).pop()
-            || candidates.filter(n=>n.length===8).pop() || '';
-      const name=names[lastPLU]||'';
-      if(bc||lastPLU){ addRec({ barcode:bc, code:lastPLU, name, price:priceDisp }); n++; }
-    }
-  }
-  return n;
-}
-
-// ====== ARAMA (isimle) ======
-searchName.addEventListener('input', ()=>{
-  const q=searchName.value.trim().toLocaleLowerCase('tr');
-  searchList.innerHTML='';
-  if(!q) return;
-  const list = Object.values(productMap); // barkodlu kayıtlar
-  let shown=0;
-  for(const p of list){
-    if(!p?.name) continue;
-    const nm = p.name.toLocaleLowerCase('tr');
-    if(nm.includes(q)){
-      const div=document.createElement('div');
-      div.className='result';
-      div.innerHTML = `<b>${p.name}</b><div>${p.barcode||'-'} · ${p.price||'—'}</div>`;
-      div.onclick=()=>{ barcodeInp.value = p.barcode || p.code || ''; showProductInfo(barcodeInp.value); qtyInp.focus(); };
-      searchList.appendChild(div);
-      if(++shown>=40) break;
-    }
+$('#searchName').addEventListener('input', ()=>{
+  const q = ($('#searchName').value||'').toLocaleLowerCase('tr-TR').trim();
+  const list = $('#searchList'); list.innerHTML='';
+  if(!q){ return; }
+  const matches = searchArr.filter(x=>x.key.includes(q)).slice(0,50);
+  for(const m of matches){
+    const row = document.createElement('div'); row.className='result';
+    row.innerHTML = `<div><strong>${m.name}</strong><br><small>${m.code}</small></div><div><strong>${m.price||'—'}</strong></div>`;
+    row.onclick = ()=>{ navigator.clipboard?.writeText(m.code).catch(()=>{}); inpCode.value=m.code; showProductInfo(m.code); inpQty.focus(); };
+    list.appendChild(row);
   }
 });
 
-// ====== UI Olayları ======
-document.getElementById('btnStart').onclick=async()=>{ await listCameras(); start(); };
-document.getElementById('btnStop').onclick = ()=> stop();
-document.getElementById('btnAdd').onclick  = ()=>{ upsert(barcodeInp.value.trim(), qtyInp.value); barcodeInp.value=''; qtyInp.value=1; showProductInfo(''); barcodeInp.focus(); };
-document.getElementById('btnMinus').onclick= ()=>{ qtyInp.value=Math.max(1,Number(qtyInp.value)-1); };
-document.getElementById('btnPlus').onclick = ()=>{ qtyInp.value=Number(qtyInp.value)+1; };
-document.getElementById('btnClearField').onclick= ()=>{ barcodeInp.value=''; showProductInfo(''); barcodeInp.focus(); };
-document.getElementById('btnExport').onclick= ()=> exportTXT();
-document.getElementById('btnCSV').onclick   = ()=> exportCSV();
-document.getElementById('btnClear').onclick = ()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; save(); render(); } };
-document.getElementById('btnUndo').onclick  = ()=> undo();
+// ====== UI OLAYLARI ======
+$('#btnStart').onclick = async()=>{ await listCameras(); start(); };
+$('#btnStop').onclick  = ()=> stop();
+btnOnce.onclick        = async()=>{ await listCameras(); state.singleShot=true; btnOnce.disabled=true; btnOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
 
-btnOk.onclick = ()=>{
-  const code = barcodeInp.value.replace(/\D/g,'');
+$('#btnAdd').onclick   = ()=>{ upsert(inpCode.value.trim(), inpQty.value); inpCode.value=''; inpQty.value=1; nameEl.textContent='—'; priceEl.textContent='—'; inpCode.focus(); };
+$('#btnMinus').onclick = ()=>{ inpQty.value=Math.max(1,Number(inpQty.value)-1); };
+$('#btnPlus').onclick  = ()=>{ inpQty.value=Number(inpQty.value)+1; };
+$('#btnClearField').onclick = ()=>{ inpCode.value=''; showProductInfo(''); inpCode.focus(); };
+$('#btnExport').onclick= ()=> exportTXT();
+$('#btnCSV').onclick   = ()=> exportCSV();
+$('#btnClear').onclick = ()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; save(); render(); } };
+$('#btnUndo').onclick  = ()=> undo();
+
+$('#btnSubmitCode').onclick = ()=>{
+  const code = inpCode.value.trim();
   if(!code) return;
   showProductInfo(code);
-  const p = getProduct(code);
-  if(p) playBeep(); else playError();
-  qtyInp.select(); qtyInp.focus();
+  playBeep(productMap[code] ? beep : errBeep);
+  inpQty.focus(); inpQty.select();
 };
-barcodeInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ btnOk.click(); } });
-qtyInp.addEventListener('focus', ()=>{ qtyInp.select(); });
-qtyInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElementById('btnAdd').click(); } });
+inpCode.addEventListener('input', ()=>{ const c=inpCode.value.trim(); if(c) showProductInfo(c); });
+inpCode.addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); $('#btnSubmitCode').click(); }
+});
+inpQty.addEventListener('focus', ()=>{ inpQty.select(); });
+inpQty.addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); $('#btnAdd').click(); }
+});
 
-btnScanOnce.onclick=async()=>{ await listCameras(); state.singleShot=true; btnScanOnce.disabled=true; btnScanOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
-
-// localStorage'dan ürün verisini çek (gerçek kayıt sayısını kullan)
+// ====== BOOT ======
 try{
-  const pm=localStorage.getItem('productMap');
-  const pc=localStorage.getItem('productByCode');
-  const cntStr=localStorage.getItem('productCount');
-  if(pm){ productMap=JSON.parse(pm); }
-  if(pc){ productByCode=JSON.parse(pc); }
-  const cnt = Number(cntStr)||0;
-  if(cnt) mapStat.textContent=cnt+' ürün yüklü';
+  const pm = localStorage.getItem('productMap');
+  if(pm){ productMap = JSON.parse(pm); mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü'; buildSearchIndex(); }
 }catch{}
 load(); listCameras();
