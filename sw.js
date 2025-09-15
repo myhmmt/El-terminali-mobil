@@ -1,5 +1,5 @@
 // PWA önbellek
-const CACHE = 'gg-terminal-v6';
+const CACHE = 'gg-terminal-v7';
 const ASSETS = [
   './','index.html','app.js','manifest.json',
   'beep.ogg','error.ogg'
