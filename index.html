@@ -6,26 +6,21 @@
   <meta name="theme-color" content="#1C2AAE" />
   <title>GENÇ GROSS • Mobil Terminal</title>
 
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <link rel="icon" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
-
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Header -->
-  <header class="gg-header">
-    <h1>GENÇ GROSS</h1>
-  </header>
+  <!-- Üst başlık -->
+  <header class="gg-header"><h1>GENÇ GROSS</h1></header>
 
   <main id="app" class="app-root">
-    <!-- Kamera / ROI -->
+    <!-- Kamera / ROI (SABİT YÜKSEKLİK) -->
     <section class="scan-area">
       <div class="video-wrap">
         <video id="video" playsinline muted></video>
         <div class="scan-roi" aria-hidden="true"></div>
-        <button id="torchBtn" class="torch-btn" type="button" aria-label="Flaş Aç/Kapat">Flaş</button>
       </div>
 
       <!-- Kamera Kontrolleri -->
@@ -41,7 +36,7 @@
       <label class="lbl">Barkod / Kod</label>
       <input id="barcodeInput" class="in numeric" inputmode="numeric" enterkeyhint="next" autocomplete="off" placeholder="Barkod yaz / okut">
 
-      <!-- SABİT BİLGİ PANELİ -->
+      <!-- Son eklenen bilgi paneli -->
       <div id="lastInfo" class="last-info" aria-live="polite" aria-atomic="true">
         <div class="li-name">(henüz ürün yok)</div>
         <div class="li-price">&nbsp;</div>
@@ -51,32 +46,30 @@
       <input id="qtyInput" class="in numeric" inputmode="numeric" enterkeyhint="go" value="1" autocomplete="off">
     </section>
 
-    <!-- Ürün Dosyası Yükle -->
+    <!-- Ürün verisi yükleme -->
     <section class="upload">
       <label class="lbl">Ürün Verisi Yükle (TXT/CSV)</label>
       <input id="fileInput" type="file" accept=".txt,.csv" />
       <div class="muted" id="datasetBadge"></div>
     </section>
 
-    <!-- Uyarılar (sabit yükseklik) -->
-    <section class="alerts-anchor">
-      <div id="alerts"></div>
+    <!-- Uyarılar -->
+    <section class="alerts-anchor"><div id="alerts"></div></section>
+
+    <!-- Okutulan / Girilen Liste -->
+    <section class="list-wrap">
+      <div id="cartList" class="list grid-list"></div>
     </section>
 
-    <!-- İsimle Arama -->
+    <!-- İsimle Arama (LİSTENİN ALTINDA) -->
     <section class="search">
       <input id="searchInput" class="in" placeholder="İsimle ara" autocomplete="off">
       <div id="searchCount" class="muted"></div>
       <div id="searchList" class="list virtual-list" data-page="0"></div>
     </section>
-
-    <!-- Ürün Listesi -->
-    <section class="list-wrap">
-      <div id="cartList" class="list grid-list"></div>
-    </section>
   </main>
 
-  <!-- Tanımsız Onay -->
+  <!-- Tanımsız onay -->
   <div id="unknownModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="unknownTitle">
     <div class="modal-sheet">
       <div class="modal-hd" id="unknownTitle">Barkod tanımsız</div>
@@ -93,7 +86,6 @@
 
   <script src="app.js"></script>
   <script>
-    // Service Worker kaydı
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(()=>{});
