@@ -1,5 +1,5 @@
-// Basit PWA önbelleği
-const CACHE = 'gg-terminal-v3';
+// PWA önbellek
+const CACHE = 'gg-terminal-v4';
 const ASSETS = [
   './','index.html','app.js','manifest.json',
   'beep.ogg','error.ogg'
@@ -17,13 +17,14 @@ self.addEventListener('activate',e=>{
 
 self.addEventListener('fetch',e=>{
   const req=e.request;
+  // Basit cache-first
   e.respondWith(
     caches.match(req).then(cached=>{
       return cached || fetch(req).then(res=>{
-        // sadece GET ve aynı origin ise dinamik ekle
-        if(req.method==='GET' && new URL(req.url).origin===location.origin){
-          const resClone=res.clone();
-          caches.open(CACHE).then(c=>c.put(req,resClone));
+        // GET istekleri (aynı/dış origin fark etmez) cache’e ekle
+        if(req.method==='GET'){
+          const clone = res.clone();
+          caches.open(CACHE).then(c=>c.put(req, clone)).catch(()=>{});
         }
         return res;
       }).catch(()=>cached || new Response('Çevrimdışı', {status:503, statusText:'offline'}));
