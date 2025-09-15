@@ -58,7 +58,7 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
 .last-info .li-name{ font-weight:700; font-size:16px; line-height:1.25; }
 .last-info .li-price{ font-weight:800; font-size:18px; color:var(--red); }
 
-/* Uyarılar için sabit yüksekliğe sahip alan: */
+/* Uyarılar için sabit yüksekliğe sahip alan */
 .alerts-anchor{ min-height:28px; }
 #alerts{ font-size:13px; color:var(--warn); }
 
@@ -79,7 +79,7 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
 /* Fiyat yoksa hücre boş ama hizalı kalsın */
 .result-row .r-price:empty::after{ content:""; display:inline-block; width:64px; }
 
-/* Sonsuz liste kaydırması (virtual-list kapsayıcısı zıplamasın) */
+/* Sonsuz liste kapsayıcısı */
 .virtual-list{ will-change: transform; }
 
 /* Ürün listesi (satır kaymasını bitiren grid) */
