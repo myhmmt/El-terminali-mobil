@@ -1,7 +1,7 @@
-const CACHE = 'gg-cache-v3';
+const CACHE = 'gg-cache-v4';
 const ASSETS = [
   '/', '/index.html', '/styles.css', '/app.js',
-  '/beep.ogg', '/accepted.ogg', '/error.ogg', '/unkown.ogg',
+  '/beep.ogg', '/accepted.ogg', '/error.ogg',
   '/icon-192.png', '/icon-512.png', '/manifest.json'
 ];
 
@@ -18,5 +18,7 @@ self.addEventListener('activate', e=>{
 });
 
 self.addEventListener('fetch', e=>{
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+  e.respondWith(
+    caches.match(e.request).then(r => r || fetch(e.request))
+  );
 });
