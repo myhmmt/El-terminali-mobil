@@ -45,7 +45,7 @@ function exportPDF(){
   for(const [bc,q] of Object.entries(state.items)){
     const p = productMap[bc] || {};
     const name = p.name || '';
-    const unitDisp = p.price || ''; // "11,90"
+    const unitDisp = p.price || '';
     const unit = priceToNumber(unitDisp);
     const qty = Number(q)||0;
     const total = unit * qty;
@@ -129,9 +129,7 @@ $('btnClearMap').onclick=()=>{ productMap={}; saveMap(); showProductInfo(''); };
 productFile.onchange=async(e)=>{
   const file=e.target.files?.[0]; if(!file) return;
   let txt=''; try{
-    // Kodlama seçimi
     if(encSel && encSel.value==='windows-1254'){
-      // 1254 için FileReader (TextDecoder polyfillsiz yöntemi)
       txt = await new Promise((resolve,reject)=>{
         const fr=new FileReader();
         fr.onload=()=>resolve(fr.result); fr.onerror=reject;
@@ -153,7 +151,7 @@ productFile.onchange=async(e)=>{
 function autoParse(txt){
   const t = txt.trim();
   if(t.startsWith('{') || t.startsWith('[')) return parseJSON(t);
-  if(/^\s*[1345];/m.test(t)) return parseGNCPULUF(t); // 1; / 3; / 4; / 5;
+  if(/^\s*[1345];/m.test(t)) return parseGNCPULUF(t);
   return parseCSV(t);
 }
 
@@ -168,7 +166,7 @@ function parseCSV(txt){
     const code=cols[0].replace(/\s+/g,'');
     const name=safeTxt(cols[1]||'');
     const price=normalizePrice(cols.slice(2).reverse().find(x=>/\d+[,.]\d{2}/.test(x))||'');
-    if(/^[0-9]{3,14}$/.test(code)) map[code]={name,price}; // 3–14: PLU + Barkod
+    if(/^[0-9]{3,14}$/.test(code)) map[code]={name,price};
   }
   return map;
 }
@@ -183,38 +181,46 @@ function parseJSON(txt){
   return map;
 }
 
-/* --- GNCPULUF (Genius 2 SQL) — sabit şema ---
+/* --- GNCPULUF (Genius 2 SQL) ---
    1;PLU;İSİM;...
    3;PLU;BARKOD;...
-   4;PLU;…;FİYAT;…   (Fiyat = 5. sütun / parts[4])
-   5;PLU;…            (yok say)                         */
+   4;PLU;…;FİYAT;…   (fiyat sütunu dosyaya göre değişebiliyor → TÜM sütunlarda ara, en sağ geçerli fiyatı al)
+   5;PLU;… (yok say)                                                        */
 function parseGNCPULUF(txt){
   const byPLU=new Map(); // PLU -> {name, price, codes:Set}
   const lines=txt.split(/\r?\n/);
+
   for(let raw of lines){
     raw=raw.trim(); if(!raw) continue;
     const parts=raw.split(';');
     const typ=parts[0];
+
     if(typ==='1'){
-      const plu=(parts[1]||'').trim();
+      const plu=(parts[1]||'').trim(); if(!plu) continue;
       const name=safeTxt((parts[2]||'').trim());
-      if(!plu) continue;
       const rec=byPLU.get(plu)||{name:'',price:'',codes:new Set()};
       if(name) rec.name=name;
       byPLU.set(plu,rec);
-    }else if(typ==='3'){
+    }
+
+    else if(typ==='3'){
       const plu=(parts[1]||'').trim(); if(!plu) continue;
       const rec=byPLU.get(plu)||{name:'',price:'',codes:new Set()};
-      // 3. sütun barkod; rakam bloklarını ayıkla (birden fazla olabiliyor)
       const bcField=(parts[2]||'').trim();
       const cands = bcField.match(/\d{3,14}/g) || [];
       for(const c of cands){ rec.codes.add(c.replace(/^0+(?=\d)/,'')); }
       byPLU.set(plu,rec);
-    }else if(typ==='4'){
+    }
+
+    else if(typ==='4'){
       const plu=(parts[1]||'').trim(); if(!plu) continue;
-      // *** fiyat 5. sütun (parts[4]) ***
-      let price = normalizePrice((parts[4]||'').trim());
-      // fallback: satırın en sağındaki fiyatı tara
+      // TÜM sütunlarda TR fiyatı tara; en sağdaki geçerli olanı al (örn: ...;175,00;175,00;)
+      let price = '';
+      for(let i=parts.length-1;i>=2;i--){
+        const p = normalizePrice((parts[i]||'').trim());
+        if(p){ price=p; break; }
+      }
+      // yine de boşsa satırın sağından regex fallback
       if(!price){
         const m = rightmostPrice(raw);
         if(m) price = m;
@@ -225,12 +231,11 @@ function parseGNCPULUF(txt){
     }
     // 5; ... yok say
   }
+
   const out={};
   for(const [,rec] of byPLU){
     const name=rec.name||'', price=rec.price||'';
     for(const bc of rec.codes){ out[bc]={name,price}; }
-    // barkodsuz ama sayısal PLU'lar elle giriş için:
-    if(rec.codes.size===0 && /^[0-9]{3,14}$/.test(rec.name? '': '')){}
   }
   return out;
 }
@@ -268,7 +273,7 @@ $('btnUndo').onclick =()=>undo();
 
 btnScanOnce.onclick=async()=>{await listCameras(); state.singleShot=true; btnScanOnce.disabled=true; btnScanOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif';};
 
-$('btnGo').onclick=()=>{ // Tamam → miktara odaklan + doğru ses
+$('btnGo').onclick=()=>{ 
   const code=barcodeInp.value.trim().replace(/\s+/g,'');
   if(!code) return;
   const found=!!productMap[code];
