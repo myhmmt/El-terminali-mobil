@@ -1,32 +1,42 @@
 <!doctype html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>GENÇ GROSS • Mobil Terminal</title>
-  <meta name="theme-color" content="#1C2AAE">
-  <link rel="manifest" href="manifest.json">
-  <style>
-    :root{--blue:#1C2AAE;--orange:#F0552C;--bg:#fff;--card:#f6f8ff;--text:#102050;--muted:#667;--ok:#1fbf75;--warn:#ff5d5d}
-    *{box-sizing:border-box} body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:var(--text)}
-    header{padding:14px 10px;background:linear-gradient(90deg,var(--orange),var(--blue));color:#fff}
-    header .wrap{max-width:980px;margin:auto;display:flex;justify-content:space-between;align-items:center}
-    .wrap{max-width:980px;margin:auto;padding:10px}
-    .card{margin:10px 0;padding:12px;background:var(--card);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.06)}
-    button{padding:8px 12px;margin:2px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
-    .primary{background:var(--blue);color:#fff}.accent{background:var(--orange);color:#fff}.good{background:var(--ok);color:#fff}.warn{background:var(--warn);color:#fff}
-    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    input[type="file"],input[type="text"],input[type="number"],input[type="tel"],select{border:1px solid #d6daf2;border-radius:8px;padding:8px}
-    table{width:100%;border-collapse:collapse;margin-top:10px} th,td{border-bottom:1px solid #dbe1ff;padding:8px} th{background:#e9edff}
-    .right{text-align:right}.muted{color:var(--muted);font-size:12px}.chip{display:inline-block;background:#e8ecff;color:#334;padding:2px 8px;border-radius:999px;font-size:12px;margin-right:6px;border:1px solid #d6daf2}
-    .videoBox{position:relative;border-radius:12px;overflow:hidden;background:#000} video{display:block;width:100%;max-height:320px}
-    .roi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-    .roi:after{content:"";width:68%;height:32%;border:2px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
-    .qtybtn{padding:6px 10px;border:1px solid #d6daf2;background:#fff;border-radius:8px}
-    .pname{font-weight:700;color:#0a7a2b}.pprice{font-weight:700;color:#a14900}
-    .result{padding:10px;border-radius:10px;background:#fff;border:1px solid #dbe1ff;margin-top:8px}
-    .result .ttl{font-weight:800}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>GENÇ GROSS • Mobil Terminal — Barkod + Adet → TXT</title>
+<style>
+  :root{--blue:#1C2AAE;--orange:#F0552C;--bg:#fff;--card:#f6f8ff;--text:#142043;--muted:#6b7391;--ok:#16a34a;--warn:#ef4444}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:var(--text)}
+  header{padding:12px 10px;background:linear-gradient(90deg,var(--orange),var(--blue));color:#fff}
+  header .wrap{max-width:980px;margin:auto;display:flex;justify-content:space-between;align-items:center}
+  header .ttl{font-weight:800;letter-spacing:.3px}
+  .wrap{max-width:980px;margin:auto;padding:12px}
+  .card{margin:10px 0;padding:12px;background:var(--card);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+  button{padding:8px 12px;margin:2px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+  .primary{background:var(--blue);color:#fff}
+  .accent{background:var(--orange);color:#fff}
+  .good{background:var(--ok);color:#fff}
+  .warn{background:var(--warn);color:#fff}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  label{font-size:13px}
+  input[type="file"],input[type="text"],input[type="number"],input[type="tel"],select{border:1px solid #d6daf2;border-radius:8px;padding:8px}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border-bottom:1px solid #dbe1ff;padding:8px}
+  th{background:#e9edff;color:#233}
+  .right{text-align:right}
+  .muted{color:var(--muted);font-size:12px}
+  .chip{display:inline-block;background:#e8ecff;color:#334;padding:2px 8px;border-radius:999px;font-size:12px;margin-right:6px;border:1px solid #d6daf2}
+  .videoBox{position:relative;border-radius:12px;overflow:hidden;background:#000}
+  video{display:block;width:100%;max-height:320px}
+  .roi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .roi:after{content:"";width:68%;height:32%;border:2px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
+  .qtybtn{padding:6px 10px;border:1px solid #d6daf2;background:#fff;border-radius:8px}
+  .pname{font-weight:700;color:#0a7a2b}
+  .pprice{font-weight:700;color:#a14900}
+  .result{display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid #dbe1ff;border-radius:10px;background:#fff;margin:6px 0}
+  .result small{color:#6b7391}
+</style>
 </head>
 <body>
 <header>
@@ -37,6 +47,7 @@
 </header>
 
 <div class="wrap">
+
   <!-- KAMERA -->
   <div class="card">
     <div class="row">
@@ -54,16 +65,19 @@
       <span id="scanStatus" class="chip">Hazır</span>
       <span id="fps" class="chip">FPS: -</span>
     </div>
+    <div class="muted">İpucu: Barkodu kutunun içinde, 15–25 cm mesafe; iyi ışık.</div>
   </div>
 
-  <!-- LİSTE + GİRİŞ -->
+  <!-- GİRİŞ + LİSTE -->
   <div class="card">
     <label>Barkod / Kod & Adet</label>
     <div class="row">
-      <input id="barcode" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Barkod veya Stok Kodu" style="flex:1;min-width:220px" />
-      <button id="btnCommit" class="accent">Tamam</button>
+      <input id="barcode" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off"
+             placeholder="Barkod veya Stok Kodu" style="flex:1;min-width:220px" />
+      <button id="btnSubmitCode" class="accent">Tamam</button>
       <button id="btnClearField">Temizle</button>
     </div>
+
     <div class="row">
       <button id="btnMinus" class="qtybtn">−1</button>
       <input id="qty" type="number" value="1" min="1" step="1" style="width:90px;text-align:center" />
@@ -76,6 +90,7 @@
 
     <label>Dosya Adı:</label>
     <input id="filename" placeholder="sayim" style="width:60%" />
+
     <div class="row" style="margin-top:8px">
       <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
       <button id="btnCSV" class="accent">CSV Olarak Dışa Aktar</button>
@@ -83,7 +98,7 @@
     </div>
 
     <table>
-      <thead><tr><th>Kod/Barkod</th><th>İsim</th><th class="right">Adet</th><th></th></tr></thead>
+      <thead><tr><th>Barkod</th><th>İsim</th><th class="right">Adet</th><th></th></tr></thead>
       <tbody id="tbody"></tbody>
     </table>
     Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
@@ -92,35 +107,249 @@
   <!-- ÜRÜN VERİSİ -->
   <div class="card">
     <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle</h3>
-    <div class="muted">CSV/TXT (ör. <code>kod;isim;…;fiyat</code>) veya JSON yükleyebilirsin. GNCPULUF (İSİM/BARKOD satır satır, FİYAT ayrı sütun) da desteklenir. Yüklendikten sonra veri cihazda saklanır.</div>
+    <div class="muted">CSV/TXT (ör. <code>kod;isim;…;fiyat</code>) veya JSON yükleyebilirsin. Yüklendikten sonra veri cihazda saklanır.</div>
     <div class="row">
-      <input id="productFile" type="file" accept=".txt,.csv,.json,.gtf,.gdf">
-      <select id="encSel" title="Kodlama">
-        <option value="windows-1254" selected>Türkçe (Windows-1254)</option>
-        <option value="iso-8859-9">Türkçe (ISO-8859-9)</option>
-        <option value="utf-8">UTF-8</option>
-      </select>
+      <input id="productFile" type="file" accept=".txt,.csv,.json" />
       <button id="btnClearMap" class="warn">Ürün Verisini Temizle</button>
       <span class="chip" id="mapStat">0 ürün yüklü</span>
     </div>
-
-    <div class="result">
-      <div class="ttl">Ürün Arama (isimle)</div>
-      <input id="nameSearch" placeholder="örn: onurlu, ekmek, kolonya..." style="width:100%;margin-top:6px">
-      <div id="searchArea"></div>
+    <div>
+      <label>Ürün Arama (isimle)</label>
+      <input id="searchName" type="text" placeholder="örn: onurlu, ekmek, kolonya..." style="width:100%;margin-top:6px" />
+      <div id="searchList"></div>
       <div class="muted">Sonuçlara dokununca barkodu kopyalar ve üst girişe doldurur.</div>
     </div>
   </div>
 
-  <audio id="beep" src="beep.ogg" preload="auto"></audio>
-  <audio id="err"  src="error.ogg" preload="auto"></audio>
+  <audio id="beep"  src="beep.ogg"  preload="auto"></audio>
+  <audio id="err"   src="error.ogg" preload="auto"></audio>
 </div>
 
-<script src="app.js"></script>
 <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js');
+/* ---------- STATE ---------- */
+const state={items:{},scanning:false,currentDeviceId:null,singleShot:false};
+let mediaStream=null,rafId=null,frames=0,duplicateGuard={code:null,until:0},lastOp=null,detector=null,off=null,octx=null;
+let productMap={};
+
+/* ---------- EL’LER ---------- */
+const $ = sel => document.querySelector(sel);
+const selCam   = $('#cameraSelect');
+const video    = $('#video');
+const statusEl = $('#scanStatus');
+const fpsEl    = $('#fps');
+const inpCode  = $('#barcode');
+const inpQty   = $('#qty');
+const tbody    = $('#tbody');
+const totalRows= $('#totalRows');
+const totalQty = $('#totalQty');
+const inpFile  = $('#productFile');
+const mapStat  = $('#mapStat');
+const nameEl   = $('#productName');
+const priceEl  = $('#productPrice');
+const beep     = $('#beep');
+const errBeep  = $('#err');
+const btnOnce  = $('#btnScanOnce');
+
+/* ---------- HELPERS ---------- */
+function render(){
+  tbody.innerHTML=''; let sum=0;
+  Object.entries(state.items).forEach(([c,q])=>{
+    sum+=Number(q)||0;
+    const name=(productMap[c]?.name)||'—';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${c}</td><td>${name}</td><td class="right">${q}</td><td><button onclick="del('${c}')">Sil</button></td>`;
+    tbody.appendChild(tr);
+  });
+  totalRows.textContent=Object.keys(state.items).length;
+  totalQty.textContent=sum;
+}
+window.del=(c)=>{delete state.items[c];save();render();}
+function upsert(c,q){ if(!c) return; const n=Math.max(1,Number(q)||1); state.items[c]=(Number(state.items[c])||0)+n; lastOp={code:c,qty:n}; save(); render(); }
+function undo(){ if(!lastOp) return; const {code,qty}=lastOp; state.items[code]=(Number(state.items[code])||0)-qty; if(state.items[code]<=0) delete state.items[code]; lastOp=null; save(); render(); }
+function save(){ localStorage.setItem('barcodeItems', JSON.stringify(state.items)); }
+function load(){ const raw=localStorage.getItem('barcodeItems'); if(raw){ try{state.items=JSON.parse(raw);}catch{} } render(); }
+
+function dl(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
+function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((($('#filename').value)||'sayim')+'.txt', lines.join('\n'), 'text/plain'); }
+function exportCSV(){ const lines=['barcode,qty',...Object.entries(state.items).map(([c,q])=>`${c},${q}`)]; dl((($('#filename').value)||'sayim')+'.csv', lines.join('\n'), 'text/csv'); }
+
+function trLower(s){ return (s||'').toLocaleLowerCase('tr-TR'); }
+function playBeep(a){ try{a.currentTime=0; a.play();}catch{} }
+
+/* ---------- KAMERA (BarcodeDetector) ---------- */
+async function listCameras(){
+  try{
+    const devices=await navigator.mediaDevices.enumerateDevices();
+    const videos=devices.filter(d=>d.kind==='videoinput');
+    selCam.innerHTML='';
+    videos.forEach((d,i)=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||`Kamera ${i+1}`;selCam.appendChild(o);});
+    const rear=videos.find(d=>/back|rear|arka/i.test(d.label||'')); state.currentDeviceId=rear?.deviceId||videos[0]?.deviceId||null;
+    if(state.currentDeviceId) selCam.value=state.currentDeviceId;
+  }catch(e){}
+}
+selCam.onchange=()=>{ state.currentDeviceId=selCam.value; if(state.scanning) start(); };
+
+async function start(){
+  stop(); statusEl.textContent='Kamera açılıyor...';
+  try{
+    const constraints={video: state.currentDeviceId?{deviceId:{exact:state.currentDeviceId},width:{ideal:1920},height:{ideal:1080}}:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}, audio:false};
+    mediaStream=await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject=mediaStream; await video.play(); state.scanning=true; statusEl.textContent='Tarama aktif'; runNativeLoop(); fpsCounter();
+  }catch(e){ statusEl.textContent='Tarama başlatılamadı'; }
+}
+function stop(){
+  cancelAnimationFrame(rafId); rafId=null; frames=0; fpsEl.textContent='FPS: -';
+  const s=video.srcObject; if(s?.getTracks) s.getTracks().forEach(t=>t.stop()); video.srcObject=null; mediaStream=null; state.scanning=false; statusEl.textContent='Durduruldu';
+}
+async function runNativeLoop(){
+  if(!('BarcodeDetector' in window)){ statusEl.textContent='Desteklenmiyor'; return; }
+  if(!detector){ detector=new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','itf','upc_e','upc_a']}); }
+  if(!off){ off=document.createElement('canvas'); octx=off.getContext('2d',{willReadFrequently:true}); }
+  const loop=async()=>{
+    if(!state.scanning) return; frames++;
+    const vw=video.videoWidth, vh=video.videoHeight;
+    if(vw&&vh){
+      const rw=Math.floor(vw*0.68), rh=Math.floor(vh*0.32);
+      const rx=Math.floor((vw-rw)/2), ry=Math.floor((vh-rh)/2);
+      off.width=rw; off.height=rh; octx.drawImage(video,rx,ry,rw,rh,0,0,rw,rh);
+      try{ const d=await detector.detect(off); if(d && d.length){ onScanned((d[0].rawValue||'').trim()); } }catch(_){}
+    }
+    if(state.scanning) rafId=requestAnimationFrame(loop);
+  }; loop();
+}
+function onScanned(code){
+  if(!code) return;
+  const now=performance.now();
+  if(code===duplicateGuard.code && now<duplicateGuard.until) return;
+  duplicateGuard={code,until:now+1500};
+
+  inpCode.value = code;
+  showProductInfo(code);
+  if(productMap[code]) playBeep(beep); else playBeep(errBeep);
+  if(navigator.vibrate) navigator.vibrate(30);
+
+  if(state.singleShot){ stop(); btnOnce.disabled=true; btnOnce.textContent='Okundu ✓'; setTimeout(()=>{btnOnce.disabled=false;btnOnce.textContent='👉 Tek Okut';},900); state.singleShot=false; }
+}
+function fpsCounter(){ let last=performance.now(); const tick=()=>{ if(!state.scanning) return; const now=performance.now(); if(now-last>=1000){ fpsEl.textContent='FPS: '+frames; frames=0; last=now; } requestAnimationFrame(tick); }; tick(); }
+
+/* ---------- ÜRÜN BİLGİ ---------- */
+function showProductInfo(code){
+  const p=productMap[code];
+  if(p){ nameEl.textContent=p.name||'—'; priceEl.textContent=p.price||'—'; }
+  else { nameEl.textContent='Bulunamadı'; priceEl.textContent='—'; }
+}
+
+/* ---------- TXT/CSV/JSON PARSE ---------- */
+function normPriceStr(p){
+  if(!p) return '';
+  p = String(p).replace(/\s+/g,'');
+  const m = p.match(/\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}/);
+  if(!m) return '';
+  let n = m[0].replace(/\./g,'').replace(',','.');
+  let v = Number(n);
+  if(!isFinite(v)) return '';
+  return v.toFixed(2).replace('.',',');
+}
+function parseTextToMap(txt){
+  const lines = txt.split(/\r?\n/).filter(l=>l.trim().length);
+  const map = {};
+  for(const raw of lines){
+    const sep = raw.includes(';') ? ';' : '\t';
+    const cols = raw.split(sep).map(s=>s.trim());
+    if(cols.length < 2) continue;
+    const code = (cols[0]||'').replace(/\s+/g,'');
+    const name = cols[1]||'';
+    if(!code || !name) continue;
+
+    // fiyat: en sağdan ilk parasal biçim
+    let price = '';
+    for(let i=cols.length-1;i>=2;i--){
+      const p = normPriceStr(cols[i]);
+      if(p){ price = p; break; }
+    }
+    map[code] = {name, price};
   }
+  return map;
+}
+
+/* ---------- DOSYA YÜKLE ---------- */
+$('#btnClearMap').onclick = ()=>{ productMap={}; localStorage.removeItem('productMap'); mapStat.textContent='0 ürün yüklü'; showProductInfo(''); $('#searchList').innerHTML=''; };
+inpFile.onchange = async(e)=>{
+  const f = e.target.files?.[0]; if(!f) return;
+  let txt=''; try{ txt = await f.text(); }catch{ alert('Dosya okunamadı.'); return; }
+  try{
+    let map={};
+    if(txt.trim().startsWith('{')){
+      const obj=JSON.parse(txt);
+      for(const [k,v] of Object.entries(obj)){
+        if(typeof v==='string') map[k]={name:v,price:''};
+        else map[k]={name:v.name||'',price:v.price||''};
+      }
+    }else{
+      map = parseTextToMap(txt);
+    }
+    productMap = map;                            // <-- ÜZERİNE YAZ
+    localStorage.setItem('productMap',JSON.stringify(productMap));
+    mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü';
+    showProductInfo(inpCode.value.trim());
+    buildSearchIndex();
+  }catch(err){ console.error(err); alert('Veri çözümlenemedi. Lütfen "kod;isim;...;fiyat" biçimi kullanın.'); }
+};
+
+/* ---------- ARAMA ---------- */
+let searchArr=[];
+function buildSearchIndex(){
+  searchArr = Object.entries(productMap).map(([code,obj])=>({code,name:obj.name,price:obj.price, key:trLower(obj.name)}));
+}
+$('#searchName').addEventListener('input', ()=>{
+  const q = trLower($('#searchName').value.trim());
+  const list = $('#searchList'); list.innerHTML='';
+  if(!q){ return; }
+  const matches = searchArr.filter(x=>x.key.includes(q)).slice(0,50);
+  for(const m of matches){
+    const row = document.createElement('div'); row.className='result';
+    row.innerHTML = `<div><strong>${m.name}</strong><br><small>${m.code}</small></div><div><strong>${m.price||'—'}</strong></div>`;
+    row.onclick = ()=>{ navigator.clipboard?.writeText(m.code).catch(()=>{}); inpCode.value=m.code; showProductInfo(m.code); inpQty.focus(); };
+    list.appendChild(row);
+  }
+}
+
+/* ---------- UI OLAYLARI ---------- */
+$('#btnStart').onclick = async()=>{ await listCameras(); start(); };
+$('#btnStop').onclick  = ()=> stop();
+btnOnce.onclick        = async()=>{ await listCameras(); state.singleShot=true; btnOnce.disabled=true; btnOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
+
+$('#btnAdd').onclick   = ()=>{ upsert(inpCode.value.trim(), inpQty.value); inpCode.value=''; inpQty.value=1; nameEl.textContent='—'; priceEl.textContent='—'; inpCode.focus(); };
+$('#btnMinus').onclick = ()=>{ inpQty.value=Math.max(1,Number(inpQty.value)-1); };
+$('#btnPlus').onclick  = ()=>{ inpQty.value=Number(inpQty.value)+1; };
+$('#btnClearField').onclick = ()=>{ inpCode.value=''; showProductInfo(''); inpCode.focus(); };
+$('#btnExport').onclick= ()=> exportTXT();
+$('#btnCSV').onclick   = ()=> exportCSV();
+$('#btnClear').onclick = ()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; save(); render(); } };
+$('#btnUndo').onclick  = ()=> undo();
+
+$('#btnSubmitCode').onclick = ()=>{
+  const code = inpCode.value.trim();
+  if(!code) return;
+  showProductInfo(code);
+  playBeep(productMap[code] ? beep : errBeep);
+  inpQty.focus(); inpQty.select();
+};
+inpCode.addEventListener('input', ()=>{ const c=inpCode.value.trim(); if(c) showProductInfo(c); });
+inpCode.addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); $('#btnSubmitCode').click(); }
+});
+inpQty.addEventListener('focus', ()=>{ inpQty.select(); });
+inpQty.addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); $('#btnAdd').click(); }
+});
+
+/* ---------- BOOT ---------- */
+try{
+  const pm = localStorage.getItem('productMap');
+  if(pm){ productMap = JSON.parse(pm); mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü'; buildSearchIndex(); }
+}catch{}
+load(); listCameras();
 </script>
 </body>
 </html>
