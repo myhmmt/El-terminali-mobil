@@ -2,6 +2,8 @@
   --blue:#1C2AAE; --orange:#F0552C; --bg:#fff; --card:#f6f8ff;
   --text:#102050; --muted:#6b7280; --ok:#1fbf75; --warn:#ff5d5d;
   --red:#e53935;
+  /* Kamera sabit yükseklik: kapalı/açık aynı */
+  --cam-h: clamp(200px, 28vh, 240px);
 }
 
 html, body { height: 100%; overscroll-behavior: contain; }
@@ -19,14 +21,14 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
 /* Ana düzen */
 .app-root{ padding:12px; display:flex; flex-direction:column; gap:12px; }
 
-/* Kamera alanı — sabit yükseklik */
+/* Kamera alanı — SABİT YÜKSEKLİK */
 .video-wrap{
   position:relative; border-radius:14px; overflow:hidden; background:#000;
-  height: 240px; /* AÇIK/KAPALI HEP AYNI BOY */
+  height: var(--cam-h);
 }
 #video{
-  position:absolute; inset:0; width:100%; height:100%;
-  object-fit: cover; display:block;
+  position:absolute; inset:0;
+  width:100% !important; height:100% !important; object-fit: cover; display:block;
 }
 /* ROI kılavuzu */
 .scan-roi{
@@ -64,7 +66,19 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
 .alerts-anchor{ min-height:28px; }
 #alerts{ font-size:13px; color:var(--warn); }
 
-/* Arama */
+/* Okutulan liste — fontlar küçültüldü, taşma yok, "Sil" sola hizalı */
+.grid-list .row{
+  display:grid;
+  grid-template-columns: 108px 1fr 70px 66px;
+  gap:8px; align-items:center;
+  padding:8px 10px; border:1px solid #e5e7eb; border-radius:12px; background:#fff;
+}
+.grid-list .c-bar{ font-variant-numeric: tabular-nums; color:#111; font-size:13px; }
+.grid-list .c-name{ font-weight:600; line-height:1.25; font-size:14px; word-break: break-word; }
+.grid-list .c-price{ justify-self:end; font-weight:700; color:var(--red); font-size:14px; }
+.grid-list .c-actions .btn{ width:66px; padding:8px 10px; text-align:left; }
+
+/* Arama (LİSTENİN ALTINDA) */
 .search{ display:flex; flex-direction:column; gap:8px; }
 .muted{ color:var(--muted); font-size:12px; }
 .list{ display:flex; flex-direction:column; gap:6px; }
@@ -78,18 +92,6 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
 .result-row .r-price{ justify-self:end; font-weight:700; font-size:15px; color:var(--red); }
 .result-row .r-bar{ font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums; }
 .result-row .r-price:empty::after{ content:""; display:inline-block; width:56px; }
-
-.virtual-list{ will-change: transform; }
-
-/* Okutulan liste — fontlar küçültüldü, taşma yok */
-.grid-list .row{
-  display:grid; grid-template-columns: 110px 1fr 82px 74px; gap:8px;
-  align-items:center; padding:8px 10px; border:1px solid #e5e7eb; border-radius:12px; background:#fff;
-}
-.grid-list .c-bar{ font-variant-numeric: tabular-nums; color:#111; font-size:13px; }
-.grid-list .c-name{ font-weight:600; line-height:1.25; font-size:14px; word-break: break-word; }
-.grid-list .c-price{ justify-self:end; font-weight:700; color:var(--red); font-size:14px; }
-.grid-list .c-actions button{ width:100%; }
 
 /* Scroll jitlemesini azalt */
 .list-wrap, .searchList, #cartList, #searchList{ overflow-anchor: none; }
