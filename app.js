@@ -1,13 +1,13 @@
-/* GENÇ GROSS – Mobil Terminal
+/* GENÇ GROSS – Mobil Terminal (güncel)
    GTF (Genius 2 SQL) şeması:
    1;PLU;İSİM;...
    3;PLU;BARKOD;...
-   4;PLU;...;FİYAT;...  → fiyat çoğunlukla 5. sütun; değilse satırın en sağındaki fiyat kullanılır.
+   4;PLU;...;...;...;FİYAT;...   <-- fiyat parts[5]
 */
 const state={items:{},scanning:false,currentDeviceId:null,singleShot:false};
 let mediaStream=null,rafId=null,frames=0,duplicateGuard={code:null,until:0},lastOp=null,detector=null,off=null,octx=null;
 
-let productMap={}; // { barkod/kod: {name, price (disp "12,34")} }
+let productMap={};         // { code: {name, price("12,34")} }
 let nameIndex=[];
 
 const $=id=>document.getElementById(id);
@@ -39,7 +39,7 @@ function normalizePriceFlexible(p){
   return '';
   function disp(n){ return (isFinite(n)&&n>0) ? n.toFixed(2).replace('.',',') : ''; }
 }
-// satırın en sağındaki fiyatı çek
+// satırın en sağındaki fiyatı yakala
 function rightmostPrice(str){
   const re=/\d{1,3}(?:[.,]\d{3})*[.,]\d{2}|\d+[.,]\d{2}/g;
   let m,last=''; while((m=re.exec(str))) last=m[0];
@@ -135,7 +135,7 @@ function onCode(text){
   barcodeInp.value=text;
   const found=!!productMap[text];
   showProductInfo(text);
-  if(found) playOk(); else playErr(); // ürün bulunmazsa error sesi
+  if(found) playOk(); else playErr();          // bulunamayan üründe error.ogg
   if(navigator.vibrate) navigator.vibrate(found?25:[30,40,30]);
   if(state.singleShot){ stop(); btnScanOnce.disabled=true; btnScanOnce.textContent='Okundu ✓'; setTimeout(()=>{btnScanOnce.disabled=false;btnScanOnce.textContent='👉 Tek Okut';},900); state.singleShot=false; }
 }
@@ -168,7 +168,10 @@ $('btnClearMap').onclick=()=>{ productMap={}; nameIndex=[]; localStorage.removeI
 productFile.onchange=async(e)=>{
   const file=e.target.files?.[0]; if(!file) return;
   try{
-    const txt=await file.text(); // 1254 sorununda FileReader+TextDecoder ekleyebiliriz
+    // Seçili kodlamayı kullanarak oku
+    const enc = (encodingSel.value||'utf-8');
+    const buf = await file.arrayBuffer();
+    const txt = new TextDecoder(enc).decode(new Uint8Array(buf));
     loadProductText(txt,file.name||'dosya');
   }catch{ alert('Dosya okunamadı.'); }
 };
@@ -208,10 +211,10 @@ function parseCSV(txt){
   return map;
 }
 
-// GTF parser: 1;PLU;İSİM…, 3;PLU;BARKOD…, 4;PLU;...;FİYAT;...
+// GTF parser: 1;PLU;İSİM…, 3;PLU;BARKOD…, 4;PLU;...;...;...;FİYAT;...
 function parseGTF(txt){
   const lines=txt.split(/\r?\n/);
-  const names={}, prices={}, barcByPlu={};
+  const names={}, prices={}, barcByPlu={}; // barcByPlu[plu] = Set()
   for(const raw of lines){
     if(!raw) continue;
     const parts=raw.split(';');
@@ -223,12 +226,14 @@ function parseGTF(txt){
     }else if(tag==='3'){
       const plu=(parts[1]||'').trim();
       const bc =(parts[2]||'').replace(/\D/g,'');
-      if(plu && bc){ (barcByPlu[plu]??=[]).push(bc); }
+      if(plu && bc){
+        if(!barcByPlu[plu]) barcByPlu[plu]=new Set();
+        barcByPlu[plu].add(bc);         // tekrarsız
+      }
     }else if(tag==='4'){
       const plu=(parts[1]||'').trim();
-      // 1) 5. sütun öncelikli
-      let priceDisp = normalizePriceFlexible(parts[4]||'');
-      // 2) boş/uygunsuzsa satırın en sağındaki fiyat
+      // Fiyat: parts[5] (öncelik) → değilse satırın en sağından
+      let priceDisp = normalizePriceFlexible(parts[5]||'');
       if(!priceDisp) priceDisp = rightmostPrice(raw);
       if(plu) prices[plu]=priceDisp;
     }
@@ -237,8 +242,14 @@ function parseGTF(txt){
   const all=new Set([...Object.keys(names),...Object.keys(prices),...Object.keys(barcByPlu)]);
   for(const plu of all){
     const name=names[plu]||''; const price=prices[plu]||'';
-    (barcByPlu[plu]||[]).forEach(bc=>{ map[bc]={name,price}; });
-    if(plu) map[plu]={name,price}; // PLU da geçerli kod
+    const bset=barcByPlu[plu];
+    if(bset && bset.size>0){
+      // Barkodları ekle
+      for(const bc of bset){ map[bc]={name,price}; }
+    }else{
+      // Barkodu yoksa PLU’yu kod olarak ekle
+      map[plu]={name,price};
+    }
   }
   return map;
 }
@@ -246,7 +257,7 @@ function parseGTF(txt){
 // ---------- olaylar ----------
 $('btnStart').onclick=async()=>{ await listCameras(); start(); };
 $('btnStop').onclick=()=>stop();
-btnScanOnce.onclick=async()=>{ await listCameras(); state.singleShot=true; btnScanOnce.disabled=true; btnScanOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
+btnScanOnce.onclick=async()=>{ await listCameras(); state.singleShot=true; $('btnScanOnce').disabled=true; $('btnScanOnce').textContent='Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
 
 $('btnAdd').onclick=()=>{ upsert(barcodeInp.value.trim(),qtyInp.value); barcodeInp.value=''; qtyInp.value=1; showProductInfo(''); barcodeInp.focus(); };
 $('btnMinus').onclick=()=>{ qtyInp.value=Math.max(1,Number(qtyInp.value)-1); };
@@ -262,7 +273,7 @@ $('btnGo').onclick=()=>{
   if(!code){ playErr(); barcodeInp.focus(); return; }
   const found=!!productMap[code];
   showProductInfo(code);
-  if(found) playOk(); else playErr();
+  if(found) playOk(); else playErr();   // bulunamayan üründe error.ogg
   qtyInp.focus(); qtyInp.select();
 };
 barcodeInp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('btnGo').click(); } });
@@ -273,7 +284,11 @@ qtyInp.addEventListener('focus',()=>{ qtyInp.select(); });
 // ---------- başlangıç ----------
 try{
   const pm=localStorage.getItem('productMap');
-  if(pm){ productMap=JSON.parse(pm); nameIndex=Object.entries(productMap).map(([bc,v])=>({bc,nameU:trUpper(v.name||''),price:v.price||''})); mapStat.textContent=Object.keys(productMap).length+' ürün yüklü'; }
+  if(pm){
+    productMap=JSON.parse(pm);
+    rebuildIndex();
+    mapStat.textContent=Object.keys(productMap).length+' ürün yüklü';
+  }
 }catch{}
 load(); listCameras();
 barcodeInp?.focus(); barcodeInp?.select();
