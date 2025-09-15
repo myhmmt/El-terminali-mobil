@@ -27,6 +27,13 @@
         <div class="scan-roi" aria-hidden="true"></div>
         <button id="torchBtn" class="torch-btn" type="button" aria-label="Flaş Aç/Kapat">Flaş</button>
       </div>
+
+      <!-- Kamera Kontrolleri -->
+      <div class="controls">
+        <button id="startBtn"  class="btn pri"   type="button">Kamerayı Başlat</button>
+        <button id="stopBtn"   class="btn ghost" type="button">Durdur</button>
+        <button id="singleBtn" class="btn"       type="button">👉 Tek Okut</button>
+      </div>
     </section>
 
     <!-- Girdiler -->
@@ -42,6 +49,13 @@
 
       <label class="lbl">Adet</label>
       <input id="qtyInput" class="in numeric" inputmode="numeric" enterkeyhint="go" value="1" autocomplete="off">
+    </section>
+
+    <!-- Ürün Dosyası Yükle -->
+    <section class="upload">
+      <label class="lbl">Ürün Verisi Yükle (TXT/CSV)</label>
+      <input id="fileInput" type="file" accept=".txt,.csv" />
+      <div class="muted" id="datasetBadge"></div>
     </section>
 
     <!-- Uyarılar (sabit yükseklik) -->
@@ -79,7 +93,7 @@
 
   <script src="app.js"></script>
   <script>
-    // Service Worker kaydı (PWA)
+    // Service Worker kaydı
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(()=>{});
