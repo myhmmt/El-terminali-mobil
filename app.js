@@ -1,17 +1,15 @@
-/* GENÇ GROSS – Mobil Terminal (GTF + CSV + JSON)
+/* GENÇ GROSS – Mobil Terminal
    GTF (Genius 2 SQL) şeması:
-     1;PLU;İSİM;...
-     3;PLU;BARKOD;...
-     4;PLU;...;FİYAT;...   (fiyat çoğunlukla 5. sütun; değilse satırın en sağındaki fiyat alınır)
+   1;PLU;İSİM;...
+   3;PLU;BARKOD;...
+   4;PLU;...;FİYAT;...  → fiyat çoğunlukla 5. sütun; değilse satırın en sağındaki fiyat kullanılır.
 */
-
 const state={items:{},scanning:false,currentDeviceId:null,singleShot:false};
 let mediaStream=null,rafId=null,frames=0,duplicateGuard={code:null,until:0},lastOp=null,detector=null,off=null,octx=null;
 
-let productMap={};    // { barkod/kod : { name, price (disp "12,34") } }
-let nameIndex=[];     // arama için
+let productMap={}; // { barkod/kod: {name, price (disp "12,34")} }
+let nameIndex=[];
 
-// ---- kısayollar
 const $=id=>document.getElementById(id);
 const selCam=$('cameraSelect'), video=$('video'), statusEl=$('scanStatus'), fpsEl=$('fps');
 const barcodeInp=$('barcode'), qtyInp=$('qty'), tbody=$('tbody'), totalRows=$('totalRows'), totalQty=$('totalQty'), filenameInp=$('filename');
@@ -20,51 +18,35 @@ const productNameEl=$('productName'), productPriceEl=$('productPrice');
 const productFile=$('productFile'), mapStat=$('mapStat'), encodingSel=$('encoding');
 const results=$('results'), searchInp=$('search');
 
-// ========= yardımcılar =========
-const trLower = s => (s||'').toLocaleLowerCase('tr-TR');
-const trUpper = s => (s||'').toLocaleUpperCase('tr-TR');
-
+// ---------- yardımcılar ----------
+const trUpper=s=>(s||'').toLocaleUpperCase('tr-TR');
 function escapeHtml(s){return (s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
-function toNumber(disp){ if(!disp) return 0; return Number(String(disp).replace(/\./g,'').replace(',','.'))||0; }
+function toNumber(d){ if(!d) return 0; return Number(String(d).replace(/\./g,'').replace(',','.'))||0; }
 function numDisp(n){ return (Number(n)||0).toFixed(2).replace('.',','); }
 
-// 12,34 / 12.34 / 1.234,56 / 1,234.56 -> "12,34" gibi gösterim
+// "175.00" / "1.175,00" / "175,00" → "175,00"
 function normalizePriceFlexible(p){
   if(p==null) return '';
   let s=String(p).trim().replace(/["'\s]/g,'').replace(/[^0-9.,]/g,'');
   if(!s) return '';
   const lastC=s.lastIndexOf(','), lastD=s.lastIndexOf('.');
-  // hem virgül hem nokta varsa: sondaki ondalık, diğeri binlik
   if(lastC>-1 && lastD>-1){
-    if(lastC>lastD){ // ondalık virgül
-      s=s.replace(/\./g,'');
-      const n=Number(s.replace(',','.'));
-      return isFinite(n)&&n>0 ? n.toFixed(2).replace('.',',') : '';
-    }else{ // ondalık nokta
-      s=s.replace(/,/g,'');
-      const n=Number(s);
-      return isFinite(n)&&n>0 ? n.toFixed(2).replace('.',',') : '';
-    }
+    if(lastC>lastD){ s=s.replace(/\./g,''); return disp(Number(s.replace(',','.'))); }
+    else{ s=s.replace(/,/g,''); return disp(Number(s)); }
   }
-  if(lastC>-1){ // sadece virgül
-    const n=Number(s.replace(/\./g,'').replace(',','.'));
-    return isFinite(n)&&n>0 ? n.toFixed(2).replace('.',',') : '';
-  }
-  if(lastD>-1){ // sadece nokta
-    const n=Number(s.replace(/,/g,''));
-    return isFinite(n)&&n>0 ? n.toFixed(2).replace('.',',') : '';
-  }
+  if(lastC>-1){ return disp(Number(s.replace(/\./g,'').replace(',','.'))); }
+  if(lastD>-1){ return disp(Number(s.replace(/,/g,''))); }
   return '';
+  function disp(n){ return (isFinite(n)&&n>0) ? n.toFixed(2).replace('.',',') : ''; }
 }
-
-// satırdaki en sağdaki fiyatı çek
+// satırın en sağındaki fiyatı çek
 function rightmostPrice(str){
   const re=/\d{1,3}(?:[.,]\d{3})*[.,]\d{2}|\d+[.,]\d{2}/g;
   let m,last=''; while((m=re.exec(str))) last=m[0];
   return normalizePriceFlexible(last);
 }
 
-// ========= render & kalıcılık =========
+// ---------- render & kalıcılık ----------
 function render(){
   tbody.innerHTML=''; let sum=0;
   Object.entries(state.items).forEach(([c,q])=>{
@@ -86,7 +68,7 @@ function undo(){ if(!lastOp) return; const {code,qty}=lastOp; state.items[code]=
 function save(){ localStorage.setItem('barcodeItems',JSON.stringify(state.items)); }
 function load(){ try{const raw=localStorage.getItem('barcodeItems'); if(raw) state.items=JSON.parse(raw);}catch{} render(); }
 
-// ========= dışa aktar =========
+// ---------- export ----------
 function dl(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
 function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((filenameInp.value||'sayim')+'.txt',lines.join('\n'),'text/plain'); }
 function exportPDF(){
@@ -106,7 +88,7 @@ function exportPDF(){
   const w=window.open('','_blank'); w.document.write(html); w.document.close(); w.print();
 }
 
-// ========= kamera =========
+// ---------- kamera ----------
 async function listCameras(){
   try{
     const devices=await navigator.mediaDevices.enumerateDevices();
@@ -153,20 +135,20 @@ function onCode(text){
   barcodeInp.value=text;
   const found=!!productMap[text];
   showProductInfo(text);
-  if(found) playOk(); else playErr();   // ✅ bulunmayan üründe error sesi
+  if(found) playOk(); else playErr(); // ürün bulunmazsa error sesi
   if(navigator.vibrate) navigator.vibrate(found?25:[30,40,30]);
   if(state.singleShot){ stop(); btnScanOnce.disabled=true; btnScanOnce.textContent='Okundu ✓'; setTimeout(()=>{btnScanOnce.disabled=false;btnScanOnce.textContent='👉 Tek Okut';},900); state.singleShot=false; }
 }
 function playOk(){ try{ okbeep.currentTime=0; okbeep.play(); }catch{} }
 function playErr(){ try{ errbeep.currentTime=0; errbeep.play(); }catch{} }
 
-// ========= ürün bilgisi & arama =========
+// ---------- ürün bilgisi & arama ----------
 function showProductInfo(code){
   const p=productMap[code];
   if(p){ productNameEl.textContent=p.name||'—'; productPriceEl.textContent=p.price||'—'; }
   else { productNameEl.textContent='Bulunamadı'; productPriceEl.textContent='—'; }
 }
-function rebuildIndex(){ nameIndex = Object.entries(productMap).map(([bc,v])=>({ bc, nameU: trUpper(v.name||''), price:v.price||'' })); }
+function rebuildIndex(){ nameIndex=Object.entries(productMap).map(([bc,v])=>({bc,nameU:trUpper(v.name||''),price:v.price||''})); }
 searchInp.addEventListener('input',()=>{
   const q=trUpper(searchInp.value.trim()); results.innerHTML=''; if(!q) return;
   const hits=nameIndex.filter(r=>r.nameU.includes(q)).slice(0,150);
@@ -180,34 +162,28 @@ searchInp.addEventListener('input',()=>{
   }
 });
 
-// ========= dosya yükleme =========
+// ---------- dosya yükleme ----------
 $('btnClearMap').onclick=()=>{ productMap={}; nameIndex=[]; localStorage.removeItem('productMap'); mapStat.textContent='0 ürün yüklü'; showProductInfo(''); results.innerHTML=''; };
 
 productFile.onchange=async(e)=>{
   const file=e.target.files?.[0]; if(!file) return;
   try{
-    // çoğu durumda .text() yeterli; 1254 sorun çıkarırsa FileReader+TextDecoder ekleriz
-    const txt=await file.text();
-    loadProductText(txt, file.name||'dosya');
+    const txt=await file.text(); // 1254 sorununda FileReader+TextDecoder ekleyebiliriz
+    loadProductText(txt,file.name||'dosya');
   }catch{ alert('Dosya okunamadı.'); }
 };
 
 function loadProductText(txt,src='metin'){
   try{
     let map={};
-    const firstLine=(txt.split(/\r?\n/).find(l=>l.trim())||'').trim();
-    if(/^([134]);/.test(firstLine)) map=parseGTF(txt);     // ✅ GTF
-    else if(txt.trim().startsWith('{')) {
+    const first=(txt.split(/\r?\n/).find(l=>l.trim())||'').trim();
+    if(/^([134]);/.test(first)) map=parseGTF(txt);
+    else if(txt.trim().startsWith('{')){
       const obj=JSON.parse(txt);
-      for(const [k,v] of Object.entries(obj)){
-        if(typeof v==='string') map[k]={name:v,price:''};
-        else map[k]={name:v.name||'',price:v.price||''};
-      }
-    } else map=parseCSV(txt);                              // CSV/TXT: kod;isim;…;fiyat
-
+      for(const [k,v] of Object.entries(obj)){ map[k]={name:(typeof v==='string'?v:(v.name||'')),price:v.price||''}; }
+    }else map=parseCSV(txt);
     const count=Object.keys(map).length;
     if(count===0){ alert('0 ürün bulundu.'); return; }
-
     productMap=map; rebuildIndex();
     localStorage.setItem('productMap',JSON.stringify(productMap));
     mapStat.textContent=count+' ürün yüklü';
@@ -216,7 +192,7 @@ function loadProductText(txt,src='metin'){
   }catch(err){ console.error(err); alert('Veri çözümlenemedi. CSV/TXT (kod;isim;…;fiyat), JSON veya GTF verin.'); }
 }
 
-// CSV/TXT: kod;isim;…;fiyat  (son sütunu fiyat sayar, esnek format)
+// CSV/TXT: kod;isim;…;fiyat  (son sütunu fiyat say)
 function parseCSV(txt){
   const lines=txt.split(/\r?\n/).filter(x=>x.trim());
   const sep=lines[0]?.includes(';')?';':',';
@@ -224,8 +200,7 @@ function parseCSV(txt){
   for(const L of lines){
     const cols=L.split(sep).map(s=>s.trim());
     if(cols.length>=2){
-      const code=(cols[0]||'').replace(/\s+/g,'');
-      const name=(cols[1]||'').trim();
+      const code=(cols[0]||'').replace(/\s+/g,''); const name=(cols[1]||'').trim();
       const priceDisp=normalizePriceFlexible(cols.at(-1)||'');
       if(code) map[code]={name,price:priceDisp};
     }
@@ -233,11 +208,10 @@ function parseCSV(txt){
   return map;
 }
 
-// GTF: 1;PLU;İSİM…, 3;PLU;BARKOD…, 4;PLU;...;FİYAT;...
+// GTF parser: 1;PLU;İSİM…, 3;PLU;BARKOD…, 4;PLU;...;FİYAT;...
 function parseGTF(txt){
   const lines=txt.split(/\r?\n/);
-  const names={}, prices={}, barcByPlu={};  // PLU -> [barkod]
-
+  const names={}, prices={}, barcByPlu={};
   for(const raw of lines){
     if(!raw) continue;
     const parts=raw.split(';');
@@ -249,31 +223,27 @@ function parseGTF(txt){
     }else if(tag==='3'){
       const plu=(parts[1]||'').trim();
       const bc =(parts[2]||'').replace(/\D/g,'');
-      if(plu && bc && bc.length>=1){ (barcByPlu[plu]??=[]).push(bc); }
+      if(plu && bc){ (barcByPlu[plu]??=[]).push(bc); }
     }else if(tag==='4'){
       const plu=(parts[1]||'').trim();
-      // 1) Önce 5. sütunu dene
+      // 1) 5. sütun öncelikli
       let priceDisp = normalizePriceFlexible(parts[4]||'');
-      // 2) Olmadıysa satırın en sağındaki fiyatı yakala
+      // 2) boş/uygunsuzsa satırın en sağındaki fiyat
       if(!priceDisp) priceDisp = rightmostPrice(raw);
       if(plu) prices[plu]=priceDisp;
     }
   }
-
   const map={};
-  const allPlus=new Set([...Object.keys(names), ...Object.keys(prices), ...Object.keys(barcByPlu)]);
-  for(const plu of allPlus){
-    const name = names[plu]||'';
-    const price= prices[plu]||'';
-    // PLU’ya bağlı tüm barkodları ekle
+  const all=new Set([...Object.keys(names),...Object.keys(prices),...Object.keys(barcByPlu)]);
+  for(const plu of all){
+    const name=names[plu]||''; const price=prices[plu]||'';
     (barcByPlu[plu]||[]).forEach(bc=>{ map[bc]={name,price}; });
-    // PLU’nun kendisini de kod olarak kullanılabilir yap
-    if(plu) map[plu]={name,price};
+    if(plu) map[plu]={name,price}; // PLU da geçerli kod
   }
   return map;
 }
 
-// ========= olaylar =========
+// ---------- olaylar ----------
 $('btnStart').onclick=async()=>{ await listCameras(); start(); };
 $('btnStop').onclick=()=>stop();
 btnScanOnce.onclick=async()=>{ await listCameras(); state.singleShot=true; btnScanOnce.disabled=true; btnScanOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
@@ -287,7 +257,6 @@ $('btnUndo').onclick=()=>undo();
 $('btnExport').onclick=()=>exportTXT();
 $('btnPDF').onclick=()=>exportPDF();
 
-// “Tamam” (manuel) — bulunmazsa error çalsın
 $('btnGo').onclick=()=>{
   const code=barcodeInp.value.trim();
   if(!code){ playErr(); barcodeInp.focus(); return; }
@@ -301,7 +270,7 @@ barcodeInp.addEventListener('input',()=>{ const code=barcodeInp.value.replace(/\
 qtyInp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('btnAdd').click(); } });
 qtyInp.addEventListener('focus',()=>{ qtyInp.select(); });
 
-// ========= başlangıç =========
+// ---------- başlangıç ----------
 try{
   const pm=localStorage.getItem('productMap');
   if(pm){ productMap=JSON.parse(pm); nameIndex=Object.entries(productMap).map(([bc,v])=>({bc,nameU:trUpper(v.name||''),price:v.price||''})); mapStat.textContent=Object.keys(productMap).length+' ürün yüklü'; }
