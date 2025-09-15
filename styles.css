@@ -32,14 +32,14 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
   pointer-events:none;
 }
 
-/* Torch butonu */
+/* Torch */
 .torch-btn{
   position:absolute; right:10px; bottom:10px; z-index:2;
   padding:8px 12px; border:0; border-radius:10px; background:#fff; color:#111;
   box-shadow:0 2px 8px rgba(0,0,0,.2);
 }
 
-/* Girdi alanları */
+/* Girdiler */
 .inputs{ display:flex; flex-direction:column; gap:8px; }
 .lbl{ font-size:12px; color:var(--muted); }
 .in{
@@ -49,7 +49,7 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
 .in:focus{ border-color:#c7d2fe; box-shadow:0 0 0 4px rgba(99,102,241,.15); }
 .numeric{ font-variant-numeric: tabular-nums; }
 
-/* SABİT BİLGİ PANELİ (Barkod ve Adet arasında) */
+/* Sabit Bilgi Paneli */
 .last-info{
   border:1px solid #e5e7eb; border-radius:12px; background:#fff; padding:10px 12px;
   display:flex; flex-direction:column; gap:4px;
@@ -58,7 +58,7 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
 .last-info .li-name{ font-weight:700; font-size:16px; line-height:1.25; }
 .last-info .li-price{ font-weight:800; font-size:18px; color:var(--red); }
 
-/* Uyarılar için sabit yüksekliğe sahip alan */
+/* Uyarılar alanı (jitter yok) */
 .alerts-anchor{ min-height:28px; }
 #alerts{ font-size:13px; color:var(--warn); }
 
@@ -67,7 +67,7 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
 .muted{ color:var(--muted); font-size:12px; }
 .list{ display:flex; flex-direction:column; gap:6px; }
 
-/* Arama sonuç satırı (okunaklık artırıldı) */
+/* Arama satırı */
 .result-row{
   display:grid; grid-template-columns: 1fr 110px; gap:8px;
   align-items:center; padding:10px 12px; border:1px solid #e5e7eb; border-radius:12px; background:#fff;
@@ -75,14 +75,9 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
 .result-row .r-name{ font-weight:600; font-size:16px; line-height:1.35; color:var(--text); }
 .result-row .r-price{ justify-self:end; font-weight:700; font-size:16px; color:var(--red); }
 .result-row .r-bar{ font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums; }
-
-/* Fiyat yoksa hücre boş ama hizalı kalsın */
 .result-row .r-price:empty::after{ content:""; display:inline-block; width:64px; }
 
-/* Sonsuz liste kapsayıcısı */
-.virtual-list{ will-change: transform; }
-
-/* Ürün listesi (satır kaymasını bitiren grid) */
+/* Ürün listesi grid */
 .grid-list .row{
   display:grid; grid-template-columns: 140px 1fr 110px 110px; gap:10px;
   align-items:center; padding:10px 12px; border:1px solid #e5e7eb; border-radius:12px; background:#fff;
@@ -98,7 +93,7 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
 /* Scroll jitlemesini azalt */
 .list-wrap, .searchList, #cartList, #searchList{ overflow-anchor: none; }
 
-/* Modal (tanımsız onayı) */
+/* Modal */
 .modal.hidden{ display:none; }
 .modal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:flex-end; justify-content:center; padding:12px; }
 .modal-sheet{
