@@ -1,9 +1,10 @@
-/* ==== SESLER (tek merkez) ==== */
+/* ==== Sesler ==== */
 const Sounds = {
   beep: new Audio('beep.ogg'),
   accepted: new Audio('accepted.ogg'),
   error: new Audio('error.ogg'),
-  unknown: new Audio('unknown.ogg'),
+  // Depodaki dosya ismi 'unkown.ogg' olduğu için ona göre kullanıyoruz:
+  unknown: new Audio('unkown.ogg'),
 };
 let audioReady = false;
 function prepareAudioOnce() {
@@ -13,7 +14,7 @@ function prepareAudioOnce() {
 }
 document.addEventListener('pointerdown', prepareAudioOnce, { once: true });
 
-/* ==== ELAMANLAR ==== */
+/* ==== Elemanlar ==== */
 const barcodeInput = document.getElementById('barcodeInput');
 const qtyInput     = document.getElementById('qtyInput');
 const lastInfo     = document.getElementById('lastInfo');
@@ -36,13 +37,10 @@ const videoEl      = document.getElementById('video');
 
 let cameraStream = null;
 let torchOn = false;
-let mode = 'manual'; // 'manual' | 'camera'
+let mode = 'manual';
 
-/* ==== VERİ ====
-   PRODUCTS dizini kendi yükleme mekanizmana göre doldurulmalı:
-   [{barcode:'869...', name:'ÜRÜN ADI', price:'109,90 TL'}]
-*/
-let PRODUCTS = [];
+/* ==== VERİ ==== */
+let PRODUCTS = []; // [{barcode:'869...', name:'...', price:'...'}]
 
 /* ==== Yardımcılar ==== */
 const onlyDigits = s => /^[0-9]+$/.test(s);
@@ -62,28 +60,18 @@ async function startCamera(){
   mode = 'camera';
   try{
     cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 }
-      },
+      video: { facingMode: { ideal: 'environment' }, width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:30,max:30} },
       audio: false
     });
     videoEl.srcObject = cameraStream;
     await videoEl.play();
-    // Kamera modunda KLAVYE AÇILMASIN
-    barcodeInput.blur();
-    qtyInput.blur();
+    barcodeInput.blur(); qtyInput.blur(); // klavye kapalı
     clearAlert();
-  }catch(e){
-    showAlert('Kamera açılamadı: ' + e.message);
-  }
+  }catch(e){ showAlert('Kamera açılamadı: '+e.message); }
 }
 function stopCamera(){
   mode = 'manual';
-  if (cameraStream){
-    cameraStream.getTracks().forEach(t => t.stop());
-    cameraStream = null;
-  }
+  if (cameraStream){ cameraStream.getTracks().forEach(t=>t.stop()); cameraStream=null; }
 }
 
 /* ==== Torch ==== */
@@ -96,28 +84,22 @@ async function toggleTorch(){
       torchOn = !torchOn;
       await track.applyConstraints({ advanced: [{ torch: torchOn }]});
       clearAlert();
-    } else {
-      showAlert('Bu cihazda flaş desteklenmiyor.');
-    }
-  }catch(e){
-    showAlert('Flaş hata: ' + e.message);
-  }
+    } else { showAlert('Bu cihazda flaş desteklenmiyor.'); }
+  }catch(e){ showAlert('Flaş hata: '+e.message); }
 }
 torchBtn?.addEventListener('click', toggleTorch);
 
-/* ==== Listeye ekleme (merkez fonksiyon) ==== */
+/* ==== Listeye ekleme ==== */
 function addToList({ barcode, qty }){
   const prod = findProduct(barcode);
-  // TODO: Burada kendi sepet/list ekleme fonksiyonunu çağır:
+  // TODO: kendi ekleme fonksiyonunu çağır:
   // upsertCartRow(barcode, prod?.name ?? '(TANIMSIZ ÜRÜN)', prod?.price ?? '', qty);
 
-  // Ses: accepted
   Sounds.accepted.currentTime = 0; Sounds.accepted.play().catch(()=>{});
-  // Sabit bilgi panelini güncelle
   updateLastInfo({ name: (prod?.name ?? '(TANIMSIZ ÜRÜN)'), price: (prod?.price ?? '') });
 }
 
-/* ==== TANIMSIZ ONAY ==== */
+/* ==== Tanımsız Onay ==== */
 function askUnknownConfirm({ barcode, qty, onConfirm }){
   Sounds.unknown.currentTime = 0; Sounds.unknown.play().catch(()=>{});
   unknownMeta.textContent = `Barkod: ${barcode} • Adet: ${qty}`;
@@ -126,14 +108,12 @@ function askUnknownConfirm({ barcode, qty, onConfirm }){
   const close = () => unknownModal.classList.add('hidden');
   function ok(){ close(); onConfirm?.(); }
   function cancel(){ close(); barcodeInput.focus(); barcodeInput.select?.(); }
-
-  unknownOk.onclick = ok;
-  unknownCancel.onclick = cancel;
+  unknownOk.onclick = ok; unknownCancel.onclick = cancel;
   unknownModal.onkeydown = (ev)=>{ if (ev.key === 'Escape') cancel(); };
 }
 
-/* ==== ENTER / GIT AKIŞI ==== */
-// Barkod alanı: Enter → numerikse Adet'e in
+/* ==== Enter / Git Akışı ==== */
+// Barkod Enter → numerikse Adet
 barcodeInput.addEventListener('keydown', (ev)=>{
   if (ev.key !== 'Enter') return;
   const val = barcodeInput.value.trim();
@@ -142,12 +122,11 @@ barcodeInput.addEventListener('keydown', (ev)=>{
     showAlert('Sadece sayısal barkod girin.');
     return;
   }
-  clearAlert();
-  ev.preventDefault();
+  clearAlert(); ev.preventDefault();
   qtyInput.focus(); qtyInput.select?.();
 });
 
-// Adet alanı: Enter → EKLE / ONAY
+// Adet Enter → ekle; tanımsızsa onay
 qtyInput.addEventListener('keydown', (ev)=>{
   if (ev.key !== 'Enter') return;
   ev.preventDefault();
@@ -161,8 +140,6 @@ qtyInput.addEventListener('keydown', (ev)=>{
     barcodeInput.focus(); barcodeInput.select?.();
     return;
   }
-
-  // qty normalize
   if (!onlyDigits(qty) || qty === '0'){ qty = '1'; }
 
   const prod = findProduct(barcode);
@@ -172,7 +149,6 @@ qtyInput.addEventListener('keydown', (ev)=>{
     barcodeInput.focus(); barcodeInput.select?.();
     clearAlert();
   } else {
-    // Tanımsızsa onay iste
     askUnknownConfirm({
       barcode, qty: Number(qty),
       onConfirm: ()=>{
@@ -185,7 +161,7 @@ qtyInput.addEventListener('keydown', (ev)=>{
   }
 });
 
-/* ==== Liste üzerindeki ADET DÜZENLEME: Enter → accepted + odak barkoda ==== */
+/* ==== Liste içi adet düzenleme: Enter ==== */
 document.addEventListener('keydown', (ev)=>{
   if (ev.key !== 'Enter') return;
   const el = ev.target;
@@ -203,60 +179,38 @@ document.addEventListener('keydown', (ev)=>{
   barcodeInput.focus(); barcodeInput.select?.();
 });
 
-/* ==== Kamera decode sonucu → ekle / onay ==== */
+/* ==== Kamera decode sonucu (kendi decoder’ından çağır) ==== */
 async function onDecode(barcode){
   prepareAudioOnce();
-  if (!onlyDigits(barcode)) {
-    Sounds.error.currentTime=0; Sounds.error.play().catch(()=>{});
-    return;
-  }
+  if (!onlyDigits(barcode)) { Sounds.error.currentTime=0; Sounds.error.play().catch(()=>{}); return; }
   const prod = findProduct(barcode);
-  if (prod){
-    addToList({ barcode, qty: 1 });
-  } else {
-    // Kamera modunda da tutarlı: tanımsızsa onay iste
-    askUnknownConfirm({
-      barcode, qty: 1,
-      onConfirm: ()=> addToList({ barcode, qty:1 })
-    });
+  if (prod){ addToList({ barcode, qty:1 }); }
+  else {
+    askUnknownConfirm({ barcode, qty:1, onConfirm: ()=> addToList({ barcode, qty:1 }) });
   }
-  // Kamera modunda inputlara focus verme → klavye açılmasın
+  // kamera modunda hiçbir inputa focus verme
 }
-// Not: Kendi tarayıcı decode döngünde başarı olduğunda onDecode(barcode) çağır.
 
-/* ==== Arama: 50 → +50; okunaklık; fiyat kırmızı, yoksa boş ==== */
-let searchResults = []; // [{name, price, barcode}]
+/* ==== Arama: 50 → +50 ==== */
+let searchResults = [];
 function renderSearchChunk(start, count=50){
   const end = Math.min(start+count, searchResults.length);
   const frag = document.createDocumentFragment();
   for (let i=start;i<end;i++){
     const p = searchResults[i];
-    const row = document.createElement('div');
-    row.className = 'result-row';
+    const row = document.createElement('div'); row.className = 'result-row';
 
-    const name = document.createElement('div');
-    name.className='r-name';
-    name.textContent = p.name || '(TANIMSIZ ÜRÜN)';
+    const name = document.createElement('div'); name.className='r-name'; name.textContent = p.name || '(TANIMSIZ ÜRÜN)';
+    const price= document.createElement('div'); price.className='r-price'; if (p.price) price.textContent = p.price;
+    const bar  = document.createElement('div'); bar.className='r-bar';   bar.textContent = p.barcode;
 
-    const price = document.createElement('div');
-    price.className='r-price';
-    if (p.price) price.textContent = p.price; // yoksa boş kalsın (hizalı)
-
-    const bar  = document.createElement('div');
-    bar.className='r-bar';
-    bar.textContent = p.barcode;
-
-    const left = document.createElement('div');
-    left.appendChild(name); left.appendChild(bar);
-
-    row.appendChild(left);
-    row.appendChild(price);
+    const left = document.createElement('div'); left.appendChild(name); left.appendChild(bar);
+    row.appendChild(left); row.appendChild(price);
     frag.appendChild(row);
   }
   searchList.appendChild(frag);
   searchList.dataset.page = String((+searchList.dataset.page) + 1);
 }
-
 function doSearch(q){
   const t = (q||'').toLocaleLowerCase('tr-TR').trim();
   searchList.innerHTML=''; searchList.dataset.page='0';
@@ -271,20 +225,13 @@ searchList.addEventListener('scroll', ()=>{
   if (!atBottom) return;
   const page = +searchList.dataset.page || 0;
   const nextStart = page * 50;
-  if (nextStart < searchResults.length){
-    renderSearchChunk(nextStart, 50);
-  }
+  if (nextStart < searchResults.length){ renderSearchChunk(nextStart, 50); }
 });
+function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
 
-function debounce(fn, ms){
-  let t; return (...a)=>{ clearTimeout(t); t = setTimeout(()=>fn(...a), ms); };
-}
-
-/* ==== Ses tuşları iptali (eski handler varsa temizle) ==== */
+/* ==== Ses tuşları iptal ==== */
 window.removeEventListener?.('keydown', window.__volumeKeyHandler__);
 window.__volumeKeyHandler__ = undefined;
 
-/* ==== Dışa aktar: mevcut PDF/TXT mekanizmana dokunmadım (kurallar aynı) ==== */
-
-/* ==== Dışarıdan erişecekse fonksiyonları export et ==== */
+/* ==== Dışarıdan erişim ==== */
 window.GG = { startCamera, stopCamera, onDecode, setProducts:(arr)=>{ PRODUCTS = arr||[]; } };
