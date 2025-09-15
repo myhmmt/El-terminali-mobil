@@ -1,75 +1,82 @@
-<!-- HEAD içinde: -->
-<meta name="theme-color" content="#1C2AAE" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1C2AAE" />
+  <title>GENÇ GROSS • Mobil Terminal</title>
 
-<link rel="manifest" href="manifest.json">
-<link rel="icon" sizes="192x192" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
 
-<!-- Header (solda turuncu → sağda mavi, ortada GENÇ GROSS) -->
-<header class="gg-header">
-  <h1>GENÇ GROSS</h1>
-</header>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="gg-header">
+    <h1>GENÇ GROSS</h1>
+  </header>
 
-<main id="app" class="app-root">
-  <!-- Kamera/ROI alanı (mevcut video/canvas yapını bozmadan ek sınıflar veriyoruz) -->
-  <section class="scan-area">
-    <div class="video-wrap">
-      <video id="video" playsinline muted></video>
-      <!-- ROI kılavuzu: yatay dikdörtgen -->
-      <div class="scan-roi" aria-hidden="true"></div>
+  <main id="app" class="app-root">
+    <!-- Kamera / ROI -->
+    <section class="scan-area">
+      <div class="video-wrap">
+        <video id="video" playsinline muted></video>
+        <div class="scan-roi" aria-hidden="true"></div>
+        <button id="torchBtn" class="torch-btn" type="button" aria-label="Flaş Aç/Kapat">Flaş</button>
+      </div>
+    </section>
 
-      <!-- Torch (flaş) düğmesi -->
-      <button id="torchBtn" class="torch-btn" type="button" aria-label="Flaş Aç/Kapat">Flaş</button>
-    </div>
-  </section>
+    <!-- Girdi alanları -->
+    <section class="inputs">
+      <label class="lbl">Barkod / Kod</label>
+      <input id="barcodeInput" class="in numeric" inputmode="numeric" enterkeyhint="next" autocomplete="off" placeholder="Barkod yaz / okut">
 
-  <!-- Girdi alanları -->
-  <section class="inputs">
-    <label class="lbl">Barkod / Kod</label>
-    <input id="barcodeInput" class="in numeric" inputmode="numeric" enterkeyhint="next" autocomplete="off" placeholder="Barkod yaz / okut">
+      <!-- SABİT BİLGİ PANELİ (Barkod ve Adet arasında sabit) -->
+      <div id="lastInfo" class="last-info" aria-live="polite" aria-atomic="true">
+        <div class="li-name">(henüz ürün yok)</div>
+        <div class="li-price">&nbsp;</div>
+      </div>
 
-    <!-- SABİT BİLGİ PANELİ (Barkod ve Adet arasına sabit) -->
-    <div id="lastInfo" class="last-info" aria-live="polite" aria-atomic="true">
-      <div class="li-name">(henüz ürün yok)</div>
-      <div class="li-price">&nbsp;</div>
-    </div>
+      <label class="lbl">Adet</label>
+      <input id="qtyInput" class="in numeric" inputmode="numeric" enterkeyhint="go" value="1" autocomplete="off">
+    </section>
 
-    <label class="lbl">Adet</label>
-    <input id="qtyInput" class="in numeric" inputmode="numeric" enterkeyhint="go" value="1" autocomplete="off">
-  </section>
+    <!-- Uyarılar için sabit alan (zıplamayı önler) -->
+    <section class="alerts-anchor">
+      <div id="alerts"></div>
+    </section>
 
-  <!-- Uyarılar için sabit yükseklikli alan (zıplamayı önler) -->
-  <section class="alerts-anchor">
-    <div id="alerts"></div>
-  </section>
+    <!-- İSİMLE ARAMA -->
+    <section class="search">
+      <input id="searchInput" class="in" placeholder="İsimle ara" autocomplete="off">
+      <div id="searchCount" class="muted"></div>
+      <div id="searchList" class="list virtual-list" data-page="0"></div>
+    </section>
 
-  <!-- İSİMLE ARAMA -->
-  <section class="search">
-    <input id="searchInput" class="in" placeholder="İsimle ara">
-    <div id="searchCount" class="muted"></div>
-    <div id="searchList" class="list virtual-list" data-page="0"></div>
-  </section>
+    <!-- ÜRÜN LİSTESİ -->
+    <section class="list-wrap">
+      <div id="cartList" class="list grid-list"></div>
+    </section>
+  </main>
 
-  <!-- ÜRÜN LİSTESİ -->
-  <section class="list-wrap">
-    <div id="cartList" class="list grid-list"></div>
-  </section>
-</main>
-
-<!-- TANIMSIZ ONAY MODALI -->
-<div id="unknownModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="unknownTitle">
-  <div class="modal-sheet">
-    <div class="modal-hd" id="unknownTitle">Barkod tanımsız</div>
-    <div class="modal-tx">
-      Bu barkod veri dosyasında bulunamadı. Yine de listeye eklemek istiyor musunuz?
-      <div id="unknownMeta" class="modal-meta"></div>
-    </div>
-    <div class="modal-actions">
-      <button id="unknownCancel" class="btn ghost" type="button">Vazgeç</button>
-      <button id="unknownOk" class="btn pri" type="button">Ekle</button>
+  <!-- TANIMSIZ ONAY MODALI -->
+  <div id="unknownModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="unknownTitle">
+    <div class="modal-sheet">
+      <div class="modal-hd" id="unknownTitle">Barkod tanımsız</div>
+      <div class="modal-tx">
+        Bu barkod veri dosyasında bulunamadı. Yine de listeye eklemek istiyor musunuz?
+        <div id="unknownMeta" class="modal-meta"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="unknownCancel" class="btn ghost" type="button">Vazgeç</button>
+        <button id="unknownOk" class="btn pri" type="button">Ekle</button>
+      </div>
     </div>
   </div>
-</div>
 
-<script src="app.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
