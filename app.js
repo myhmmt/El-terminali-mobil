@@ -114,22 +114,43 @@ function showProductInfo(code){
 // ====== PARSE ======
 function normPriceStr(p){
   if(!p) return '';
-  p = String(p).replace(/\s+/g,'');
-  const m = p.match(/\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}/);
-  if(!m) return '';
-  let n = m[0].replace(/\./g,'').replace(',','.');
-  let v = Number(n);
+  p = String(p).trim();
+  if(!p) return '';
+
+  // Accept dot or comma decimals, with optional thousand separators
+  const onlyNums = p.replace(/[^\\d.,]/g, '');
+  if(!onlyNums) return '';
+
+  // Determine decimal separator as the last . or , followed by 1-2 digits
+  let decIdx = -1;
+  for(let i=onlyNums.length-1;i>=0;i--){
+    const ch = onlyNums[i];
+    if((ch==='.'||ch===',') && i < onlyNums.length-1){
+      const tail = onlyNums.slice(i+1);
+      if(/^\\d{1,2}$/.test(tail)){ decIdx = i; break; }
+    }
+  }
+
+  let intPart, fracPart='';
+  if(decIdx>=0){ intPart = onlyNums.slice(0,decIdx); fracPart = onlyNums.slice(decIdx+1); }
+  else { intPart = onlyNums; }
+
+  intPart = intPart.replace(/[.,]/g, '');
+  let norm = intPart;
+  if(fracPart){ fracPart = (fracPart+'00').slice(0,2); norm += '.'+fracPart; }
+  const v = Number(norm);
   if(!isFinite(v)) return '';
   return v.toFixed(2).replace('.',',');
 }
+
 function parseTextToMap(txt){
-  const lines = txt.split(/\r?\n/).filter(l=>l.trim().length);
+  const lines = txt.split(/\\r?\\n/).filter(l=>l.trim().length);
   const map = {};
   for(const raw of lines){
-    const sep = raw.includes(';') ? ';' : '\t';
+    const sep = raw.includes(';') ? ';' : '\\t';
     const cols = raw.split(sep).map(s=>s.trim());
     if(cols.length < 2) continue;
-    const code = (cols[0]||'').replace(/\s+/g,'');
+    const code = (cols[0]||'').replace(/\\s+/g,'');
     const name = cols[1]||'';
     if(!code || !name) continue;
 
@@ -165,7 +186,7 @@ inpFile.onchange = async(e)=>{
     mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü';
     showProductInfo(inpCode.value.trim());
     buildSearchIndex();
-  }catch(err){ console.error(err); alert('Veri çözümlenemedi. "kod;isim;…;fiyat" biçimini kullanın.'); }
+  }catch(err){ console.error(err); alert('Veri çözümlenemedi. \"kod;isim;…;fiyat\" biçimini kullanın.'); }
 };
 
 // ====== ARAMA ======
