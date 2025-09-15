@@ -1,191 +1,75 @@
-<!doctype html>
-<html lang="tr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>GENÇ GROSS · Mobil Terminal</title>
-  <meta name="theme-color" content="#1C2AAE" />
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" sizes="192x192" href="icon-192.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <style>
-    :root{
-      --blue:#1C2AAE;--orange:#F0552C;--bg:#fff;--card:#f6f8ff;--text:#102050;--muted:#667;
-      --ok:#1fbf75;--warn:#ff5d5d;--line:#e2e6ff
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    header{padding:14px 12px;background:var(--blue);color:#fff;display:flex;justify-content:space-between;align-items:center}
-    header h1{font-size:18px;margin:0;font-weight:700}
-    main{padding:12px;display:grid;gap:12px}
-    section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
-    h2{margin:0 0 8px 0;font-size:16px}
-    label{font-size:14px;color:var(--muted)}
-    input[type="text"],input[type="number"]{
-      width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:#fff
-    }
-    .row{display:flex;gap:8px;align-items:center}
-    .col{flex:1}
-    .btn{border:0;border-radius:12px;padding:10px 12px;font-weight:600;font-size:15px;cursor:pointer}
-    .btn:active{transform:translateY(1px)}
-    .btn-ok{background:var(--ok);color:#fff}
-    .btn-warn{background:var(--warn);color:#fff}
-    .btn-info{background:var(--orange);color:#fff}
-    .btn-ghost{background:#fff;border:1px solid var(--line);color:var(--text)}
-    .hint{font-size:13px;color:var(--muted)}
-    .list{width:100%;border-collapse:collapse;margin-top:8px}
-    .list th,.list td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;font-size:14px}
-    .list th{text-transform:uppercase;letter-spacing:.04em;font-size:12px;color:var(--muted)}
-    .right{text-align:right}
-    .actions{display:flex;gap:6px;justify-content:flex-end}
-    .pill{padding:6px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:12px;color:var(--muted)}
-    .danger{color:#fff;background:var(--warn);border-color:var(--warn)}
-    .success{color:#fff;background:var(--ok);border-color:var(--ok)}
-    /* Kamera alanı */
-    #cameraCard{position:relative;overflow:hidden}
-    #video{width:100%;border-radius:12px;background:#000}
-    /* kılavuz dikdörtgen */
-    #guide{
-      position:absolute;inset:18% 10%;
-      border:3px solid rgba(255,255,255,.9);
-      border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.25) inset;
-      pointer-events:none
-    }
-    /* Tek Okut (baş parmak) */
-    #singleScanBtn{
-      position:fixed;bottom:18px;right:16px;z-index:20;
-      padding:14px 16px;border-radius:18px;font-size:16px;font-weight:800;
-      box-shadow:0 10px 24px rgba(0,0,0,.2)
-    }
-    /* Onay modalı */
-    dialog{border:0;border-radius:16px;width:min(520px,92vw);padding:0}
-    .modal{padding:16px}
-    .modal header{background:transparent;color:inherit;padding:0 0 8px 0}
-    .modal .row{justify-content:flex-end}
-    .kbd{background:#eee;border-radius:6px;padding:2px 6px;font-family:ui-monospace,monospace;font-size:12px;border:1px solid #ddd}
-    @media (min-width:720px){
-      main{grid-template-columns:1.1fr .9fr}
-      #singleScanBtn{right:22px}
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>GENÇ GROSS · Mobil Terminal</h1>
-    <span class="pill" id="installedHint">Offline haz.: <span id="offlineState">—</span></span>
-  </header>
+<!-- HEAD içinde: -->
+<meta name="theme-color" content="#1C2AAE" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-  <main>
-    <!-- KAMERA -->
-    <section id="cameraCard">
-      <h2>📷 Kamera</h2>
-      <div class="row" style="gap:8px;flex-wrap:wrap">
-        <button id="startBtn" class="btn btn-ok">Başlat</button>
-        <button id="stopBtn"  class="btn btn-warn">Durdur</button>
-        <span class="pill">Tarama aralığı: 2 sn</span>
-        <span class="pill">Android</span>
-      </div>
-      <div style="margin-top:8px;position:relative">
-        <video id="video" playsinline muted></video>
-        <div id="guide"></div>
-      </div>
-      <div class="hint" style="margin-top:6px">
-        • Yalnızca arka kamera kullanılır. • <span class="kbd">Ses +</span>/<span class="kbd">Ses −</span> = <b>Tek Okut</b>. 
-        • Tek Okut: Kamera açılır → ürün okununca otomatik kapanır.
-      </div>
-      <button id="singleScanBtn" class="btn btn-info">TEK OKUT</button>
-    </section>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 
-    <!-- FORM -->
-    <section>
-      <h2>🔢 Barkod / Kod &amp; Adet</h2>
-      <div class="row">
-        <div class="col">
-          <label for="barcodeInput">Barkod / Kod</label>
-          <input id="barcodeInput" type="number" inputmode="numeric" placeholder="Sadece sayısal" autocomplete="off">
-        </div>
-        <button id="clearBarcodeBtn" class="btn btn-ghost" title="Temizle">Temizle</button>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <div class="col">
-          <label for="qtyInput">Adet</label>
-          <input id="qtyInput" type="number" inputmode="numeric" placeholder="Adet" value="1">
-        </div>
-        <button id="addBtn" class="btn btn-ok">Ekle</button>
-      </div>
-      <div id="foundInfo" class="hint" style="margin-top:8px">—</div>
-    </section>
+<!-- Header (solda turuncu → sağda mavi, ortada GENÇ GROSS) -->
+<header class="gg-header">
+  <h1>GENÇ GROSS</h1>
+</header>
 
-    <!-- DIŞA AKTARMA -->
-    <section>
-      <h2>📤 Dışa Aktarma</h2>
-      <label for="filenameInput">Dosya adı</label>
-      <input id="filenameInput" type="text" placeholder="örn: 2025-09-15_sayim_A3">
-      <div class="row" style="margin-top:8px;flex-wrap:wrap">
-        <button id="exportTxtBtn" class="btn btn-ghost">TXT olarak aktar</button>
-        <button id="exportPdfBtn" class="btn btn-ghost">PDF olarak aktar</button>
-      </div>
-      <div class="hint" style="margin-top:6px">
-        TXT biçimi: <span class="kbd">8698770460609;35</span> satırları, okuma sırasına göre.
-      </div>
-    </section>
+<main id="app" class="app-root">
+  <!-- Kamera/ROI alanı (mevcut video/canvas yapını bozmadan ek sınıflar veriyoruz) -->
+  <section class="scan-area">
+    <div class="video-wrap">
+      <video id="video" playsinline muted></video>
+      <!-- ROI kılavuzu: yatay dikdörtgen -->
+      <div class="scan-roi" aria-hidden="true"></div>
 
-    <!-- LİSTE -->
-    <section>
-      <h2>🧾 Okutulan / Girilen Liste</h2>
-      <div class="row" style="justify-content:space-between;margin-bottom:6px">
-        <span class="pill">Kalıcıdır (temizlemedikçe silinmez)</span>
-        <div class="actions">
-          <button id="clearListBtn" class="btn btn-warn">Listeyi Temizle</button>
-        </div>
-      </div>
-      <table class="list" id="itemsTable">
-        <thead><tr><th>Barkod</th><th>İsim</th><th class="right">Adet</th><th class="right">İşlem</th></tr></thead>
-        <tbody id="itemsBody"></tbody>
-      </table>
-    </section>
-
-    <!-- ÜRÜN VERİSİ -->
-    <section>
-      <h2>📦 Ürün Verisi Yükle</h2>
-      <div class="row" style="flex-wrap:wrap">
-        <input id="productFileInput" type="file" accept=".txt" />
-        <button id="clearProductsBtn" class="btn btn-warn">Ürün Verisini Temizle</button>
-        <span id="productCount" class="pill">0 ürün yüklü</span>
-      </div>
-      <div class="row" style="margin-top:6px">
-        <input id="searchInput" type="text" placeholder="İsimle ara (ı=i, İ=i, ö=o, ü=u vb.)" />
-      </div>
-      <div id="searchResult" class="hint" style="margin-top:6px">—</div>
-    </section>
-  </main>
-
-  <!-- Onay Modalları -->
-  <dialog id="confirmClearList">
-    <div class="modal">
-      <header><h3>Listeyi temizlemek istediğine emin misin?</h3></header>
-      <p class="hint">Bu işlem geri alınamaz.</p>
-      <div class="row">
-        <button data-close class="btn btn-ghost">Vazgeç</button>
-        <button id="confirmClearListYes" class="btn btn-warn">Evet, temizle</button>
-      </div>
+      <!-- Torch (flaş) düğmesi -->
+      <button id="torchBtn" class="torch-btn" type="button" aria-label="Flaş Aç/Kapat">Flaş</button>
     </div>
-  </dialog>
+  </section>
 
-  <dialog id="confirmClearProducts">
-    <div class="modal">
-      <header><h3>Ürün verisini silmek istiyor musun?</h3></header>
-      <p class="hint">“Ürün Verisini Temizle” onayı olmadan veri silinmez.</p>
-      <div class="row">
-        <button data-close class="btn btn-ghost">Vazgeç</button>
-        <button id="confirmClearProductsYes" class="btn btn-warn">Evet, sil</button>
-      </div>
+  <!-- Girdi alanları -->
+  <section class="inputs">
+    <label class="lbl">Barkod / Kod</label>
+    <input id="barcodeInput" class="in numeric" inputmode="numeric" enterkeyhint="next" autocomplete="off" placeholder="Barkod yaz / okut">
+
+    <!-- SABİT BİLGİ PANELİ (Barkod ve Adet arasına sabit) -->
+    <div id="lastInfo" class="last-info" aria-live="polite" aria-atomic="true">
+      <div class="li-name">(henüz ürün yok)</div>
+      <div class="li-price">&nbsp;</div>
     </div>
-  </dialog>
 
-  <audio id="beep" src="beep.ogg" preload="auto"></audio>
-  <audio id="error" src="error.ogg" preload="auto"></audio>
+    <label class="lbl">Adet</label>
+    <input id="qtyInput" class="in numeric" inputmode="numeric" enterkeyhint="go" value="1" autocomplete="off">
+  </section>
 
-  <script src="app.js"></script>
-</body>
-</html>
+  <!-- Uyarılar için sabit yükseklikli alan (zıplamayı önler) -->
+  <section class="alerts-anchor">
+    <div id="alerts"></div>
+  </section>
+
+  <!-- İSİMLE ARAMA -->
+  <section class="search">
+    <input id="searchInput" class="in" placeholder="İsimle ara">
+    <div id="searchCount" class="muted"></div>
+    <div id="searchList" class="list virtual-list" data-page="0"></div>
+  </section>
+
+  <!-- ÜRÜN LİSTESİ -->
+  <section class="list-wrap">
+    <div id="cartList" class="list grid-list"></div>
+  </section>
+</main>
+
+<!-- TANIMSIZ ONAY MODALI -->
+<div id="unknownModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="unknownTitle">
+  <div class="modal-sheet">
+    <div class="modal-hd" id="unknownTitle">Barkod tanımsız</div>
+    <div class="modal-tx">
+      Bu barkod veri dosyasında bulunamadı. Yine de listeye eklemek istiyor musunuz?
+      <div id="unknownMeta" class="modal-meta"></div>
+    </div>
+    <div class="modal-actions">
+      <button id="unknownCancel" class="btn ghost" type="button">Vazgeç</button>
+      <button id="unknownOk" class="btn pri" type="button">Ekle</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
