@@ -29,12 +29,12 @@
       </div>
     </section>
 
-    <!-- Girdi alanları -->
+    <!-- Girdiler -->
     <section class="inputs">
       <label class="lbl">Barkod / Kod</label>
       <input id="barcodeInput" class="in numeric" inputmode="numeric" enterkeyhint="next" autocomplete="off" placeholder="Barkod yaz / okut">
 
-      <!-- SABİT BİLGİ PANELİ (Barkod ve Adet arasında sabit) -->
+      <!-- SABİT BİLGİ PANELİ -->
       <div id="lastInfo" class="last-info" aria-live="polite" aria-atomic="true">
         <div class="li-name">(henüz ürün yok)</div>
         <div class="li-price">&nbsp;</div>
@@ -44,25 +44,25 @@
       <input id="qtyInput" class="in numeric" inputmode="numeric" enterkeyhint="go" value="1" autocomplete="off">
     </section>
 
-    <!-- Uyarılar için sabit alan (zıplamayı önler) -->
+    <!-- Uyarılar (sabit yükseklik) -->
     <section class="alerts-anchor">
       <div id="alerts"></div>
     </section>
 
-    <!-- İSİMLE ARAMA -->
+    <!-- İsimle Arama -->
     <section class="search">
       <input id="searchInput" class="in" placeholder="İsimle ara" autocomplete="off">
       <div id="searchCount" class="muted"></div>
       <div id="searchList" class="list virtual-list" data-page="0"></div>
     </section>
 
-    <!-- ÜRÜN LİSTESİ -->
+    <!-- Ürün Listesi -->
     <section class="list-wrap">
       <div id="cartList" class="list grid-list"></div>
     </section>
   </main>
 
-  <!-- TANIMSIZ ONAY MODALI -->
+  <!-- Tanımsız Onay -->
   <div id="unknownModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="unknownTitle">
     <div class="modal-sheet">
       <div class="modal-hd" id="unknownTitle">Barkod tanımsız</div>
@@ -78,5 +78,13 @@
   </div>
 
   <script src="app.js"></script>
+  <script>
+    // Service Worker kaydı (PWA)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(()=>{});
+      });
+    }
+  </script>
 </body>
 </html>
