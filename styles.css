@@ -31,6 +31,7 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
   border-radius:12px; box-shadow: 0 0 0 9999px rgba(0,0,0,.35) inset;
   pointer-events:none;
 }
+.controls{ display:flex; gap:8px; margin-top:8px; }
 
 /* Torch */
 .torch-btn{
@@ -57,6 +58,9 @@ body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui
 }
 .last-info .li-name{ font-weight:700; font-size:16px; line-height:1.25; }
 .last-info .li-price{ font-weight:800; font-size:18px; color:var(--red); }
+
+/* Ürün dosyası yükleme */
+.upload{ display:flex; flex-direction:column; gap:8px; }
 
 /* Uyarılar alanı (jitter yok) */
 .alerts-anchor{ min-height:28px; }
