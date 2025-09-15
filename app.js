@@ -117,17 +117,17 @@ function normPriceStr(p){
   p = String(p).trim();
   if(!p) return '';
 
-  // Accept dot or comma decimals, with optional thousand separators
-  const onlyNums = p.replace(/[^\\d.,]/g, '');
+  // Nokta veya virgül ondalık, binlik ayraçlar desteklenir
+  const onlyNums = p.replace(/[^\d.,]/g, '');
   if(!onlyNums) return '';
 
-  // Determine decimal separator as the last . or , followed by 1-2 digits
+  // Sonda 1-2 rakamı takip eden son . veya , ondalık ayraç kabul edilir
   let decIdx = -1;
   for(let i=onlyNums.length-1;i>=0;i--){
     const ch = onlyNums[i];
     if((ch==='.'||ch===',') && i < onlyNums.length-1){
       const tail = onlyNums.slice(i+1);
-      if(/^\\d{1,2}$/.test(tail)){ decIdx = i; break; }
+      if(/^\d{1,2}$/.test(tail)){ decIdx = i; break; }
     }
   }
 
@@ -144,22 +144,30 @@ function normPriceStr(p){
 }
 
 function parseTextToMap(txt){
-  const lines = txt.split(/\\r?\\n/).filter(l=>l.trim().length);
+  const lines = txt.split(/\r?\n/).filter(l=>l.trim().length);
   const map = {};
   for(const raw of lines){
-    const sep = raw.includes(';') ? ';' : '\\t';
+    const sep = raw.includes(';') ? ';' : '\t';
     const cols = raw.split(sep).map(s=>s.trim());
     if(cols.length < 2) continue;
-    const code = (cols[0]||'').replace(/\\s+/g,'');
+
+    const code = (cols[0]||'').replace(/\s+/g,'');
     const name = cols[1]||'';
     if(!code || !name) continue;
 
-    // fiyat: sağdan sola ilk parasal
     let price = '';
-    for(let i=cols.length-1;i>=2;i--){
-      const p = normPriceStr(cols[i]);
-      if(p){ price = p; break; }
+    if(cols.length >= 3){
+      // Tam 3 kolonlu format: kod;isim;fiyat -> 3. kolonu esas al
+      price = normPriceStr(cols[2]);
     }
+    // Yedek: sondan başa fiyat benzeri alanı ara
+    if(!price){
+      for(let i=cols.length-1;i>=2;i--){
+        const p = normPriceStr(cols[i]);
+        if(p){ price = p; break; }
+      }
+    }
+
     map[code] = {name, price};
   }
   return map;
@@ -186,7 +194,7 @@ inpFile.onchange = async(e)=>{
     mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü';
     showProductInfo(inpCode.value.trim());
     buildSearchIndex();
-  }catch(err){ console.error(err); alert('Veri çözümlenemedi. \"kod;isim;…;fiyat\" biçimini kullanın.'); }
+  }catch(err){ console.error(err); alert('Veri çözümlenemedi. "kod;isim;…;fiyat" biçimini kullanın.'); }
 };
 
 // ====== ARAMA ======
