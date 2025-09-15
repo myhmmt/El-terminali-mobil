@@ -1,27 +1,32 @@
-// Offline PWA Service Worker (v7)
-const CACHE = 'gg-terminal-v7';
+// Basit PWA önbelleği
+const CACHE = 'gg-terminal-v3';
 const ASSETS = [
-  './','./index.html','./app.js','./manifest.json',
-  './beep.ogg','./error.ogg','./icon-192.png','./icon-512.png'
+  './','index.html','app.js','manifest.json',
+  'beep.ogg','error.ogg'
 ];
 
-self.addEventListener('install', e=>{
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
+self.addEventListener('install',e=>{
+  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
 });
-self.addEventListener('activate', e=>{
-  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
-  self.clients.claim();
+
+self.addEventListener('activate',e=>{
+  e.waitUntil(
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
+  );
 });
-self.addEventListener('fetch', e=>{
+
+self.addEventListener('fetch',e=>{
   const req=e.request;
   e.respondWith(
-    caches.match(req).then(res=>res||fetch(req).then(net=>{
-      try{
+    caches.match(req).then(cached=>{
+      return cached || fetch(req).then(res=>{
+        // sadece GET ve aynı origin ise dinamik ekle
         if(req.method==='GET' && new URL(req.url).origin===location.origin){
-          const clone=net.clone(); caches.open(CACHE).then(c=>c.put(req,clone));
+          const resClone=res.clone();
+          caches.open(CACHE).then(c=>c.put(req,resClone));
         }
-      }catch{}
-      return net;
-    }).catch(()=>caches.match('./index.html')))
+        return res;
+      }).catch(()=>cached || new Response('Çevrimdışı', {status:503, statusText:'offline'}));
+    })
   );
 });
