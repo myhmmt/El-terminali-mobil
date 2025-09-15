@@ -4,30 +4,41 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GENÇ GROSS • Mobil Terminal</title>
+  <meta name="theme-color" content="#1C2AAE" />
+
+  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1C2AAE">
+  <link rel="icon" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
   <style>
     :root{--blue:#1C2AAE;--orange:#F0552C;--bg:#fff;--card:#f6f8ff;--text:#102050;--muted:#667;--ok:#1fbf75;--warn:#ff5d5d}
     *{box-sizing:border-box}
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:var(--text)}
     header{padding:14px 10px;background:linear-gradient(90deg,var(--orange),var(--blue));color:#fff}
     header .wrap{max-width:980px;margin:auto;display:flex;justify-content:space-between;align-items:center}
+    header .ttl{font-weight:800;letter-spacing:.3px}
     .wrap{max-width:980px;margin:auto;padding:10px}
     .card{margin:10px 0;padding:12px;background:var(--card);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.06)}
-    button{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
-    .primary{background:var(--blue);color:#fff}.accent{background:var(--orange);color:#fff}.good{background:var(--ok);color:#fff}.warn{background:var(--warn);color:#fff}
+    button{padding:8px 12px;margin:2px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+    .primary{background:var(--blue);color:#fff}
+    .accent{background:var(--orange);color:#fff}
+    .good{background:var(--ok);color:#fff}
+    .warn{background:var(--warn);color:#fff}
     .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    input,select{border:1px solid #d6daf2;border-radius:8px;padding:10px}
+    label{font-size:13px}
+    input[type="file"],input[type="text"],input[type="number"],input[type="tel"],select{border:1px solid #d6daf2;border-radius:8px;padding:8px}
     table{width:100%;border-collapse:collapse;margin-top:10px}
     th,td{border-bottom:1px solid #dbe1ff;padding:8px}
-    th{background:#e9edff}
+    th{background:#e9edff;color:#233}
     .right{text-align:right}
     .muted{color:var(--muted);font-size:12px}
+    .chip{display:inline-block;background:#e8ecff;color:#334;padding:2px 8px;border-radius:999px;font-size:12px;margin-right:6px;border:1px solid #d6daf2}
     .videoBox{position:relative;border-radius:12px;overflow:hidden;background:#000}
     video{display:block;width:100%;max-height:320px}
     .roi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
     .roi:after{content:"";width:68%;height:32%;border:2px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
-    .qtybtn{padding:8px 12px;border:1px solid #d6daf2;background:#fff;border-radius:8px}
+    .qtybtn{padding:6px 10px;border:1px solid #d6daf2;background:#fff;border-radius:8px}
     .pname{font-weight:700;color:#0a7a2b}
     .pprice{font-weight:700;color:#a14900}
   </style>
@@ -55,16 +66,19 @@
       <div class="roi"></div>
     </div>
     <div class="status">
-      <span id="scanStatus" class="muted">Hazır</span> ·
-      <span id="fps" class="muted">FPS: -</span>
+      <span id="scanStatus" class="chip">Hazır</span>
+      <span id="fps" class="chip">FPS: -</span>
     </div>
   </div>
 
-  <!-- GİRİŞ + LİSTE -->
+  <!-- LİSTE + GİRİŞ -->
   <div class="card">
     <label>Barkod / Kod & Adet</label>
     <div class="row">
-      <input id="barcode" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Barkod veya Kod" style="flex:1;min-width:220px" />
+      <input id="barcode" type="tel" inputmode="numeric" pattern="[0-9]*"
+             autocomplete="off" placeholder="Barkod veya Kod"
+             style="flex:1;min-width:220px"
+             autofocus onclick="this.select()"/>
       <button id="btnGo" class="accent">Tamam</button>
       <button id="btnClearField">Temizle</button>
     </div>
@@ -97,34 +111,41 @@
   <!-- ÜRÜN VERİSİ -->
   <div class="card">
     <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle</h3>
-    <div class="muted">CSV/TXT (<code>kod;isim;…;fiyat</code>) veya JSON ya da <b>Genius 2 SQL (GNCPULUF.GTF)</b>. Yüklendikten sonra cihazda saklanır.</div>
+    <div class="muted">CSV/TXT (ör. <code>kod;isim;...;fiyat</code>) ya da <b>Genius 2 SQL (GNCPULUF)</b> veya JSON yükleyebilirsin. Yüklendikten sonra veri cihazda saklanır; sayfayı yenilesen de kalır.</div>
     <div class="row">
       <input id="productFile" type="file" accept=".txt,.csv,.json,.gtf,.gdf" />
-      <select id="encoding">
-        <option value="utf-8">UTF-8</option>
+      <select id="encoding" title="Kodlama">
         <option value="windows-1254" selected>Türkçe (Windows-1254)</option>
+        <option value="utf-8">UTF-8</option>
       </select>
       <button id="btnClearMap" class="warn">Ürün Verisini Temizle</button>
-      <span class="muted" id="mapStat">0 ürün yüklü</span>
+      <span class="chip" id="mapStat">0 ürün yüklü</span>
     </div>
   </div>
 
-  <!-- İSİMLE ARAMA -->
+  <!-- ÜRÜN ARAMA -->
   <div class="card">
     <h3 style="margin:4px 0 8px 0">Ürün Arama (isimle)</h3>
-    <input id="search" placeholder="örn: onurlu, ekmek, kolonya..." />
+    <input id="search" type="text" placeholder="örn: onurlu, ekmek, kolonya..." style="width:100%;margin-bottom:8px">
     <div id="results"></div>
+    <div class="muted">Sonuçlara dokununca barkodu kopyalar ve üst girişe doldurur.</div>
   </div>
 
-  <!-- sesler -->
+  <!-- Sesler -->
   <audio id="okbeep"  src="beep.ogg"  preload="auto"></audio>
   <audio id="errbeep" src="error.ogg" preload="auto"></audio>
 </div>
 
+<!-- Uygulama kodu -->
 <script src="app.js"></script>
+
+<!-- Service Worker -->
 <script>
-  // SW versiyonunu querystring ile artır: v=12
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=12'); }
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js');
+    });
+  }
 </script>
 </body>
 </html>
