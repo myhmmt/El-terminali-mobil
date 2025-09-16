@@ -139,8 +139,10 @@ function fpsCounter(){ let last=performance.now(); const tick=()=>{ if(!state.sc
 // ====== ÜRÜN BİLGİ ======
 function showProductInfo(code){
   const p=productMap[code];
+  const box = document.getElementById('productInfoBox'); // yeni kutu
   if(p){ nameEl.textContent=p.name||'—'; priceEl.textContent=p.price||'—'; }
   else { nameEl.textContent='Bulunamadı'; priceEl.textContent='—'; }
+  if(box) box.style.display='block'; // görünür tut
 }
 
 // ====== PARSE ======
@@ -213,8 +215,7 @@ $('#btnClearMap').onclick = ()=>{ productMap={}; localStorage.removeItem('produc
 inpFile.onchange = async(e)=>{
   const f = e.target.files?.[0]; if(!f) return;
   let txt=''; try{ txt = await f.text(); }catch{ alert('Dosya okunamadı.'); return; }
-  // Strip BOM (UTF-8 Byte Order Mark)
-  if(txt && txt.charCodeAt(0) === 0xFEFF){ txt = txt.slice(1); }
+  if(txt && txt.charCodeAt(0) === 0xFEFF){ txt = txt.slice(1); } // BOM temizle
   try{
     let map={};
     if(txt.trim().startsWith('{')){
@@ -265,14 +266,13 @@ $('#btnAdd').onclick  = ()=>{
 
   const known = !!productMap[code];
   if(!known){
-    // Uyarı görünürken unknown sesi çalsın
-    play(sndUnknown);
+    play(sndUnknown); // uyarı görünürken çal
     const ok = confirm('Bu barkod ürün verisinde tanımlı değil. Listeye eklemek istediğinizden emin misiniz?');
     if(!ok) return;
   }
 
   upsert(code, qty);
-  if(known) play(sndAccepted); // tanımlı ürün eklenirken accepted çal
+  if(known) play(sndAccepted); // tanımlı üründe accepted çal
   inpCode.value=''; inpQty.value=1; nameEl.textContent='—'; priceEl.textContent='—'; inpCode.focus();
 };
 
