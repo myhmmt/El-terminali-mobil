@@ -139,10 +139,10 @@ function fpsCounter(){ let last=performance.now(); const tick=()=>{ if(!state.sc
 // ====== ÜRÜN BİLGİ ======
 function showProductInfo(code){
   const p=productMap[code];
-  const box = document.getElementById('productInfoBox'); // yeni kutu
+  const box = document.getElementById('productInfoBox'); // kutuyu görünür tut
   if(p){ nameEl.textContent=p.name||'—'; priceEl.textContent=p.price||'—'; }
   else { nameEl.textContent='Bulunamadı'; priceEl.textContent='—'; }
-  if(box) box.style.display='block'; // görünür tut
+  if(box) box.style.display='block';
 }
 
 // ====== PARSE ======
