@@ -12,6 +12,7 @@
       --priceRed:#e11d48; --titleNavy:#0b1d4b;
     }
     *{box-sizing:border-box}
+    html,body{overflow-x:hidden} /* sağa taşmayı engelle */
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:var(--text)}
     header{padding:12px 10px;background:linear-gradient(90deg,var(--orange),var(--blue));color:#fff}
     header .wrap{max-width:980px;margin:auto;display:flex;justify-content:center;align-items:center}
@@ -26,8 +27,8 @@
     .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
     label{font-size:13px}
     input[type="file"],input[type="text"],input[type="number"],input[type="search"],select{border:1px solid #d6daf2;border-radius:8px;padding:8px}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{border-bottom:1px solid #dbe1ff;padding:8px}
+    table{width:100%;border-collapse:collapse;margin-top:10px;table-layout:fixed} /* sabit yerleşim */
+    th,td{border-bottom:1px solid #dbe1ff;padding:8px;vertical-align:middle}
     th{background:#e9edff;color:#233}
     .right{text-align:right}
     .muted{color:var(--muted);font-size:12px}
@@ -39,18 +40,10 @@
     .guide{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
     .guide::after{content:"";width:72%;height:36%;border:3px dashed rgba(255,255,255,.85);border-radius:12px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
 
-    /* Adet butonları kaldırıldığı için yok */
-
     /* Ürün adı ve fiyat görünümü */
-    .pname{
-      font-weight:800;color:var(--titleNavy);font-size:18px;letter-spacing:.2px;line-height:1.2;text-transform:uppercase;
-    }
-    .pprice{
-      font-weight:800;color:var(--priceRed);font-size:20px;line-height:1.2;
-    }
-    .productInfoBox{
-      margin:10px 0 4px 0;background:#fff;border:1px solid #e5e7f4;border-radius:12px;padding:10px 12px;box-shadow:0 2px 8px rgba(16,32,80,.06);
-    }
+    .pname{font-weight:800;color:var(--titleNavy);font-size:18px;letter-spacing:.2px;line-height:1.2;text-transform:uppercase}
+    .pprice{font-weight:800;color:var(--priceRed);font-size:20px;line-height:1.2}
+    .productInfoBox{margin:10px 0 4px 0;background:#fff;border:1px solid #e5e7f4;border-radius:12px;padding:10px 12px;box-shadow:0 2px 8px rgba(16,32,80,.06)}
 
     .result{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #dbe1ff;border-radius:10px;background:#fff;margin:6px 0}
     .result small{color:#6b7391}
@@ -60,6 +53,12 @@
 
     /* Kamera seçici gizli */
     #cameraSelect{display:none}
+
+    /* Sil butonu sola ve sabit genişlik */
+    th.col-act, td.col-act{width:64px;text-align:left}
+    .btn-del{padding:6px 10px;border:1px solid #e5e9ff;background:#fff;border-radius:8px}
+    td.col-name{word-break:break-word}
+    td.col-qty{width:90px}
   </style>
 </head>
 <body>
@@ -98,7 +97,7 @@
       <button id="btnAdd"   class="good">Ekle</button>
     </div>
 
-    <!-- Ürün adı + fiyat, barkod ile adet arasında kutuda -->
+    <!-- Ürün adı + fiyat -->
     <div id="productInfoBox" class="productInfoBox">
       <div id="productName"  class="pname">—</div>
       <div id="productPrice" class="pprice">—</div>
@@ -113,7 +112,14 @@
     <div id="searchList"></div>
 
     <table>
-      <thead><tr><th>Barkod</th><th>İsim</th><th class="right">Adet</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th class="col-act"></th>
+          <th>Barkod</th>
+          <th>İsim</th>
+          <th class="right">Adet</th>
+        </tr>
+      </thead>
       <tbody id="tbody"></tbody>
     </table>
     Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
@@ -125,31 +131,4 @@
     <div class="muted">TXT/CSV (ör. <code>kod;isim;…;fiyat</code>). Yüklendikten sonra veri cihazda saklanır.</div>
     <div class="row">
       <input id="productFile" type="file" accept=".txt,.csv,.json" />
-      <span id="mapStat" class="chip">0 ürün yüklü</span>
-      <button id="btnClearMap" class="warn">Temizle</button>
-    </div>
-
-    <div class="row" style="margin-top:10px">
-      <label>Dosya Adı</label>
-      <input id="filename" placeholder="sayim" style="width:60%" />
-      <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
-      <button id="btnPDF" class="accent">PDF Olarak Dışa Aktar</button>
-      <button id="btnClear" class="warn">Listeyi Temizle</button>
-    </div>
-  </div>
-
-  <audio id="beep"  src="beep.ogg"  preload="auto"></audio>
-  <audio id="err"   src="error.ogg" preload="auto"></audio>
-</div>
-
-<!-- Sabit “Tek Okut” -->
-<button id="btnScanOnce" class="accent">👉 Tek Okut</button>
-
-<script src="app.js"></script>
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
-  }
-</script>
-</body>
-</html>
+      <span id="mapStat" class="chip">0 ü
