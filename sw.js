@@ -1,4 +1,4 @@
-const CACHE = "ggmt-v1";
+const CACHE = "ggmt-v2";
 const ASSETS = [
   "./",
   "./index.html",
