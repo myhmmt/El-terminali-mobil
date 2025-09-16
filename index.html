@@ -3,21 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GENÇ GROSS • Mobil Terminal — Barkod + Adet → TXT</title>
+  <title>GENÇ GROSS • Mobil Terminal</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#1C2AAE" />
   <style>
     :root{
       --blue:#1C2AAE;--orange:#F0552C;--bg:#fff;--card:#f6f8ff;--text:#142043;--muted:#6b7391;--ok:#16a34a;--warn:#ef4444;
-      /* yeni */
-      --priceRed:#e11d48;      /* kırmızı fiyat */
-      --titleNavy:#0b1d4b;     /* koyu lacivert ürün adı */
+      --priceRed:#e11d48; --titleNavy:#0b1d4b;
     }
     *{box-sizing:border-box}
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:var(--text)}
     header{padding:12px 10px;background:linear-gradient(90deg,var(--orange),var(--blue));color:#fff}
-    header .wrap{max-width:980px;margin:auto;display:flex;justify-content:space-between;align-items:center}
-    header .ttl{font-weight:800;letter-spacing:.3px}
+    header .wrap{max-width:980px;margin:auto;display:flex;justify-content:center;align-items:center}
+    header .ttl{font-weight:800;letter-spacing:.3px;text-align:center}
     .wrap{max-width:980px;margin:auto;padding:12px}
     .card{background:var(--card);padding:12px;border-radius:12px;margin:10px 0;border:1px solid #e5e9ff}
     button{padding:8px 12px;margin:2px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
@@ -34,45 +32,40 @@
     .right{text-align:right}
     .muted{color:var(--muted);font-size:12px}
     .chip{display:inline-block;background:#e8ecff;color:#334;padding:4px 8px;border-radius:999px;font-size:12px;margin-right:6px;border:1px solid #d6daf2}
-    .videoBox{position:relative;border-radius:12px;overflow:hidden;background:#000}
-    video{width:100%;height:auto;display:block}
-    .guide{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
-    .guide::after{content:"";width:68%;height:32%;border:3px dashed rgba(255,255,255,.85);border-radius:10px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
-    .qtybtn{padding:6px 10px;border:1px solid #d6daf2;background:#fff;border-radius:8px}
 
-    /* ürün adı ve fiyat görünümü */
+    /* KAMERA */
+    .videoBox{position:relative;border-radius:12px;overflow:hidden;background:#000;max-width:680px;margin-top:8px}
+    video{width:100%;height:auto;display:block;max-height:45vh;object-fit:cover}
+    .guide{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
+    .guide::after{content:"";width:72%;height:36%;border:3px dashed rgba(255,255,255,.85);border-radius:12px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
+
+    /* Adet butonları kaldırıldığı için yok */
+
+    /* Ürün adı ve fiyat görünümü */
     .pname{
-      font-weight:800;
-      color:var(--titleNavy);
-      font-size:18px;
-      letter-spacing:.2px;
-      line-height:1.2;
-      text-transform:uppercase;
+      font-weight:800;color:var(--titleNavy);font-size:18px;letter-spacing:.2px;line-height:1.2;text-transform:uppercase;
     }
     .pprice{
-      font-weight:800;
-      color:var(--priceRed);
-      font-size:20px;
-      line-height:1.2;
+      font-weight:800;color:var(--priceRed);font-size:20px;line-height:1.2;
     }
     .productInfoBox{
-      margin:10px 0 4px 0;
-      background:#fff;
-      border:1px solid #e5e7f4;
-      border-radius:12px;
-      padding:10px 12px;
-      box-shadow:0 2px 8px rgba(16,32,80,.06);
+      margin:10px 0 4px 0;background:#fff;border:1px solid #e5e7f4;border-radius:12px;padding:10px 12px;box-shadow:0 2px 8px rgba(16,32,80,.06);
     }
 
     .result{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #dbe1ff;border-radius:10px;background:#fff;margin:6px 0}
     .result small{color:#6b7391}
+
+    /* “Tek Okut” sabit FAB */
+    #btnScanOnce{position:fixed;right:16px;bottom:16px;z-index:9999;border-radius:999px;padding:12px 16px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+
+    /* Kamera seçici gizli */
+    #cameraSelect{display:none}
   </style>
 </head>
 <body>
 <header>
   <div class="wrap">
     <div class="ttl">📦 GENÇ GROSS • Mobil Terminal</div>
-    <div>Barkod + Adet → TXT</div>
   </div>
 </header>
 
@@ -83,12 +76,11 @@
     <div class="row">
       <button id="btnStart" class="primary">Kamerayı Başlat</button>
       <button id="btnStop">Durdur</button>
-      <button id="btnScanOnce" class="accent">👉 Tek Okut</button>
       <span class="chip" id="scanStatus">Hazır</span>
       <span class="chip" id="fps">FPS: -</span>
       <select id="cameraSelect"></select>
     </div>
-    <div class="videoBox" style="max-width:680px;margin-top:8px">
+    <div class="videoBox">
       <video id="video" playsinline autoplay muted></video>
       <div class="guide"></div>
     </div>
@@ -102,11 +94,8 @@
       <button id="btnClearField">Temizle</button>
       <button id="btnSubmitCode" class="accent">Bilgiyi Göster</button>
       <label>Adet</label>
-      <input id="qty" type="number" value="1" min="1" style="width:90px" />
-      <button id="btnMinus" class="qtybtn">-1</button>
-      <button id="btnPlus"  class="qtybtn">+1</button>
+      <input id="qty" type="number" value="1" min="1" style="width:110px" />
       <button id="btnAdd"   class="good">Ekle</button>
-      <button id="btnUndo">Geri Al</button>
     </div>
 
     <!-- Ürün adı + fiyat, barkod ile adet arasında kutuda -->
@@ -133,7 +122,7 @@
   <!-- ÜRÜN VERİSİ -->
   <div class="card">
     <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle</h3>
-    <div class="muted">CSV/TXT (ör. <code>kod;isim;…;fiyat</code>) yükleyebilirsin. Yüklendikten sonra veri cihazda saklanır.</div>
+    <div class="muted">TXT/CSV (ör. <code>kod;isim;…;fiyat</code>). Yüklendikten sonra veri cihazda saklanır.</div>
     <div class="row">
       <input id="productFile" type="file" accept=".txt,.csv,.json" />
       <span id="mapStat" class="chip">0 ürün yüklü</span>
@@ -144,7 +133,7 @@
       <label>Dosya Adı</label>
       <input id="filename" placeholder="sayim" style="width:60%" />
       <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
-      <button id="btnCSV" class="accent">CSV Olarak Dışa Aktar</button>
+      <button id="btnPDF" class="accent">PDF Olarak Dışa Aktar</button>
       <button id="btnClear" class="warn">Listeyi Temizle</button>
     </div>
   </div>
@@ -152,6 +141,9 @@
   <audio id="beep"  src="beep.ogg"  preload="auto"></audio>
   <audio id="err"   src="error.ogg" preload="auto"></audio>
 </div>
+
+<!-- Sabit “Tek Okut” -->
+<button id="btnScanOnce" class="accent">👉 Tek Okut</button>
 
 <script src="app.js"></script>
 <script>
