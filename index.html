@@ -131,4 +131,31 @@
     <div class="muted">TXT/CSV (ör. <code>kod;isim;…;fiyat</code>). Yüklendikten sonra veri cihazda saklanır.</div>
     <div class="row">
       <input id="productFile" type="file" accept=".txt,.csv,.json" />
-      <span id="mapStat" class="chip">0 ü
+      <span id="mapStat" class="chip">0 ürün yüklü</span>
+      <button id="btnClearMap" class="warn">Temizle</button>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <label>Dosya Adı</label>
+      <input id="filename" placeholder="sayim" style="width:60%" />
+      <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
+      <button id="btnPDF" class="accent">PDF Olarak Dışa Aktar</button>
+      <button id="btnClear" class="warn">Listeyi Temizle</button>
+    </div>
+  </div>
+
+  <audio id="beep"  src="beep.ogg"  preload="auto"></audio>
+  <audio id="err"   src="error.ogg" preload="auto"></audio>
+</div>
+
+<!-- Sabit “Tek Okut” -->
+<button id="btnScanOnce" class="accent">👉 Tek Okut</button>
+
+<script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+</script>
+</body>
+</html>
