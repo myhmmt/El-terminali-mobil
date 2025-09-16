@@ -35,8 +35,12 @@ function render(){
     const tr=document.createElement('tr');
     tr.innerHTML=
       `<td class="col-act"><button class="btn-del" onclick="del('${c}')">Sil</button></td>
-       <td>${c}</td>
-       <td class="col-name">${name}</td>
+       <td class="col-product">
+         <div class="prod">
+           <div class="prod-name">${name}</div>
+           <div class="prod-code">${c}</div>
+         </div>
+       </td>
        <td class="right col-qty">
          <input type="number" class="qtyInput" min="0" value="${q}" data-code="${c}" style="width:72px;text-align:right">
        </td>`;
@@ -169,7 +173,6 @@ function onScanned(code){
 
   inpCode.value = code;
   showProductInfo(code);
-  // 5-6) sesler
   if(productMap[code]) playBeep(beep); else playBeep(errBeep);
   if(navigator.vibrate) navigator.vibrate(30);
 
@@ -318,7 +321,7 @@ inpQty.addEventListener('keydown', e=>{
 });
 inpQty.addEventListener('focus', ()=>{ inpQty.select(); });
 
-// Liste adet düzenleme (input üzerinde)
+// Liste adet düzenleme
 tbody.addEventListener('change', (e)=>{
   const t = e.target;
   if(t && t.classList.contains('qtyInput')){
