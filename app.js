@@ -22,7 +22,7 @@ const beep     = $('#beep');
 const errBeep  = $('#err');
 const btnOnce  = $('#btnScanOnce');
 
-// Ek sesler (index.html'e audio etiketi eklemeye gerek yok)
+// Ek sesler
 const sndAccepted = new Audio('accepted.ogg'); sndAccepted.preload = 'auto';
 const sndUnknown  = new Audio('unkown.ogg');  sndUnknown.preload  = 'auto';
 
@@ -53,26 +53,53 @@ function trLower(s){ return (s||'').toLocaleLowerCase('tr-TR'); }
 function play(a){ try{ a.currentTime=0; a.play(); }catch{} }
 function playBeep(a){ play(a); }
 
-// ====== KAMERA / BarcodeDetector ======
+// ====== KAMERA ======
 async function listCameras(){
   try{
     const devices=await navigator.mediaDevices.enumerateDevices();
     const videos=devices.filter(d=>d.kind==='videoinput');
     selCam.innerHTML='';
     videos.forEach((d,i)=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||`Kamera ${i+1}`;selCam.appendChild(o);});
-    const rear=videos.find(d=>/back|rear|arka/i.test(d.label||'')); state.currentDeviceId=rear?.deviceId||videos[0]?.deviceId||null;
+    const rear=videos.find(d=>/back|rear|arka|environment/i.test(d.label||'')); 
+    state.currentDeviceId=rear?.deviceId||videos[0]?.deviceId||null;
     if(state.currentDeviceId) selCam.value=state.currentDeviceId;
-  }catch(e){}
+  }catch(e){ console.warn('listCameras error', e); }
 }
 selCam.onchange=()=>{ state.currentDeviceId=selCam.value; if(state.scanning) start(); };
 
 async function start(){
-  stop(); statusEl.textContent='Kamera açılıyor...';
+  stop();
+  statusEl.textContent='Kamera açılıyor...';
+  const tryGet = async (cons) => {
+    try{ return await navigator.mediaDevices.getUserMedia(cons); }
+    catch(e){ throw e; }
+  };
   try{
-    const constraints={video: state.currentDeviceId?{deviceId:{exact:state.currentDeviceId},width:{ideal:1920},height:{ideal:1080}}:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}, audio:false};
-    mediaStream=await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject=mediaStream; await video.play(); state.scanning=true; statusEl.textContent='Tarama aktif'; runNativeLoop(); fpsCounter();
-  }catch(e){ statusEl.textContent='Tarama başlatılamadı'; }
+    let stream=null;
+
+    if(state.currentDeviceId){
+      try{ stream = await tryGet({video:{deviceId:{exact:state.currentDeviceId}}, audio:false}); }catch(_){}
+    }
+    if(!stream){
+      try{ stream = await tryGet({video:{facingMode:{exact:'environment'}, width:{ideal:1920}, height:{ideal:1080}}, audio:false}); }
+      catch(_){ try{ stream = await tryGet({video:{facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}}, audio:false}); }catch(__){} }
+    }
+    if(!stream){ stream = await tryGet({video:true, audio:false}); }
+
+    mediaStream = stream;
+    video.srcObject = mediaStream;
+    await video.play();
+    state.scanning=true;
+    statusEl.textContent='Tarama aktif';
+    runNativeLoop();
+    fpsCounter();
+  }catch(e){
+    console.error('Camera error:', e);
+    let msg='Tarama başlatılamadı.';
+    if(e && e.name==='NotAllowedError') msg='Kamera izni verilmedi. Lütfen site için Kamera iznini aç.';
+    if(e && (e.name==='NotFoundError' || e.name==='OverconstrainedError')) msg='Uygun kamera bulunamadı. Başka bir kamerayı seçmeyi deneyin.';
+    statusEl.textContent=msg;
+  }
 }
 function stop(){
   cancelAnimationFrame(rafId); rafId=null; frames=0; fpsEl.textContent='FPS: -';
@@ -122,11 +149,9 @@ function normPriceStr(p){
   p = String(p).trim();
   if(!p) return '';
 
-  // Nokta veya virgül ondalık, binlik ayraçlar desteklenir
   const onlyNums = p.replace(/[^\d.,]/g, '');
   if(!onlyNums) return '';
 
-  // Sonda 1-2 rakamı takip eden son . veya , ondalık ayraç kabul edilir
   let decIdx = -1;
   for(let i=onlyNums.length-1;i>=0;i--){
     const ch = onlyNums[i];
@@ -151,40 +176,33 @@ function normPriceStr(p){
 function parseTextToMap(txt){
   const lines = txt.split(/\r?\n/).filter(l=>l.trim().length);
   const map = {};
-  for(const raw of lines){
-    const sep = raw.includes(';') ? ';' : '\t';
-    const cols = raw.split(sep).map(s=>s.trim());
-    if(cols.length < 2) continue;
+  for(const raw0 of lines){
+    const raw = raw0.trim();
+    const first = raw.indexOf(';'); if(first === -1) continue;
+    const second = raw.indexOf(';', first+1); if(second === -1) continue;
 
-    const code = (cols[0]||'').replace(/\s+/g,'');
-    const name = cols[1]||'';
+    const code = raw.slice(0, first).replace(/\s+/g,'');
+    const name = raw.slice(first+1, second).trim();
+    const tail = raw.slice(second+1).trim();
     if(!code || !name) continue;
 
-    let price = '';
-    if(cols.length >= 3){
-      // Tam 3 kolonlu format: kod;isim;fiyat -> 3. kolonu esas al
-      price = normPriceStr(cols[2]);
-      if(!price && cols[2]){
-        // normPriceStr boş dönerse: 3. sütunu ham olarak göster
-        const rawPrice = String(cols[2]).trim();
-        const numish = rawPrice.replace(/[^\d.,]/g,'');
-        if(numish){
-          // tek noktalı değerleri virgüle çevir (görsel için)
-          const guess = numish.includes('.') && !numish.includes(',') ? numish.replace('.',',') : numish;
-          price = guess;
-        } else {
-          price = rawPrice;
-        }
+    let price = normPriceStr(tail);
+    if(!price && tail){
+      const numish = tail.replace(/[^\d.,]/g,'');
+      if(numish){
+        const guess = (numish.includes('.') && !numish.includes(',')) ? numish.replace('.',',') : numish;
+        price = guess;
+      }else{
+        price = tail;
       }
     }
-    // Yedek: sondan başa fiyat benzeri alanı ara
     if(!price){
-      for(let i=cols.length-1;i>=2;i--){
-        const p = normPriceStr(cols[i]);
+      const parts = raw.split(';').map(s=>s.trim());
+      for(let i=parts.length-1;i>=2;i--){
+        const p = normPriceStr(parts[i]);
         if(p){ price = p; break; }
       }
     }
-
     map[code] = {name, price};
   }
   return map;
@@ -195,6 +213,8 @@ $('#btnClearMap').onclick = ()=>{ productMap={}; localStorage.removeItem('produc
 inpFile.onchange = async(e)=>{
   const f = e.target.files?.[0]; if(!f) return;
   let txt=''; try{ txt = await f.text(); }catch{ alert('Dosya okunamadı.'); return; }
+  // Strip BOM (UTF-8 Byte Order Mark)
+  if(txt && txt.charCodeAt(0) === 0xFEFF){ txt = txt.slice(1); }
   try{
     let map={};
     if(txt.trim().startsWith('{')){
@@ -206,7 +226,7 @@ inpFile.onchange = async(e)=>{
     }else{
       map = parseTextToMap(txt);
     }
-    productMap = map;  // ÜZERİNE YAZ
+    productMap = map;
     localStorage.setItem('productMap',JSON.stringify(productMap));
     mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü';
     showProductInfo(inpCode.value.trim());
@@ -245,7 +265,7 @@ $('#btnAdd').onclick  = ()=>{
 
   const known = !!productMap[code];
   if(!known){
-    // Uyarı gösterildiği anda unknown sesi çalsın
+    // Uyarı görünürken unknown sesi çalsın
     play(sndUnknown);
     const ok = confirm('Bu barkod ürün verisinde tanımlı değil. Listeye eklemek istediğinizden emin misiniz?');
     if(!ok) return;
@@ -253,7 +273,6 @@ $('#btnAdd').onclick  = ()=>{
 
   upsert(code, qty);
   if(known) play(sndAccepted); // tanımlı ürün eklenirken accepted çal
-  // Alanları sıfırla
   inpCode.value=''; inpQty.value=1; nameEl.textContent='—'; priceEl.textContent='—'; inpCode.focus();
 };
 
