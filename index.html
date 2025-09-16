@@ -34,13 +34,11 @@
     .muted{color:var(--muted);font-size:12px}
     .chip{display:inline-block;background:#e8ecff;color:#334;padding:4px 8px;border-radius:999px;font-size:12px;margin-right:6px;border:1px solid #d6daf2}
 
-    /* KAMERA */
     .videoBox{position:relative;border-radius:12px;overflow:hidden;background:#000;max-width:680px;margin-top:8px}
     video{width:100%;height:auto;display:block;max-height:45vh;object-fit:cover}
     .guide{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
     .guide::after{content:"";width:72%;height:36%;border:3px dashed rgba(255,255,255,.85);border-radius:12px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
 
-    /* Ürün adı ve fiyat görünümü (barkod/adet alanı arasında) */
     .pname{font-weight:800;color:var(--titleNavy);font-size:18px;letter-spacing:.2px;line-height:1.2;text-transform:uppercase}
     .pprice{font-weight:800;color:var(--priceRed);font-size:20px;line-height:1.2}
     .productInfoBox{margin:10px 0 4px 0;background:#fff;border:1px solid #e5e7f4;border-radius:12px;padding:10px 12px;box-shadow:0 2px 8px rgba(16,32,80,.06)}
@@ -48,21 +46,16 @@
     .result{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #dbe1ff;border-radius:10px;background:#fff;margin:6px 0}
     .result small{color:#6b7391}
 
-    /* “Tek Okut” sabit FAB */
     #btnScanOnce{position:fixed;right:16px;bottom:16px;z-index:9999;border-radius:999px;padding:12px 16px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
-
-    /* Kamera seçici gizli */
     #cameraSelect{display:none}
 
-    /* Liste hücreleri */
     th.col-act, td.col-act{width:64px;text-align:left}
     td.col-product{word-break:break-word}
     td.col-qty{width:90px}
 
-    /* Ürün hücresi: üstte isim (küçük), altta barkod */
-    .prod{display:flex;flex-direction:column;gap:2px}
-    .prod-name{font-weight:700;font-size:14px;line-height:1.2;color:var(--titleNavy)}
-    .prod-code{font-size:12px;color:var(--muted)}
+    .prod{display:block}
+    .prod-name{display:block;font-weight:700;font-size:14px;line-height:1.15;color:var(--titleNavy);margin:0 0 2px 0}
+    .prod-code{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Roboto Mono",monospace;font-size:12px;color:var(--muted);word-break:break-all;letter-spacing:.2px}
     .btn-del{padding:6px 10px;border:1px solid #e5e9ff;background:#fff;border-radius:8px}
   </style>
 </head>
@@ -75,7 +68,6 @@
 
 <div class="wrap">
 
-  <!-- KAMERA -->
   <div class="card">
     <div class="row">
       <button id="btnStart" class="primary">Kamerayı Başlat</button>
@@ -90,7 +82,6 @@
     </div>
   </div>
 
-  <!-- BARKOD / ADET -->
   <div class="card">
     <div class="row">
       <label>Barkod / Kod</label>
@@ -101,14 +92,12 @@
       <input id="qty" type="number" value="1" min="1" style="width:110px" />
       <button id="btnAdd"   class="good">Ekle</button>
     </div>
-
     <div id="productInfoBox" class="productInfoBox">
       <div id="productName"  class="pname">—</div>
       <div id="productPrice" class="pprice">—</div>
     </div>
   </div>
 
-  <!-- LİSTE + ARAMA -->
   <div class="card">
     <div class="row">
       <input id="searchName" type="search" placeholder="İsimle ara..." style="flex:1;min-width:260px" />
@@ -128,7 +117,6 @@
     Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
   </div>
 
-  <!-- ÜRÜN VERİSİ -->
   <div class="card">
     <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle</h3>
     <div class="muted">TXT/CSV (ör. <code>kod;isim;…;fiyat</code>). Yüklendikten sonra veri cihazda saklanır.</div>
