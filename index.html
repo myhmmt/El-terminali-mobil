@@ -7,7 +7,12 @@
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#1C2AAE" />
   <style>
-    :root{--blue:#1C2AAE;--orange:#F0552C;--bg:#fff;--card:#f6f8ff;--text:#142043;--muted:#6b7391;--ok:#16a34a;--warn:#ef4444}
+    :root{
+      --blue:#1C2AAE;--orange:#F0552C;--bg:#fff;--card:#f6f8ff;--text:#142043;--muted:#6b7391;--ok:#16a34a;--warn:#ef4444;
+      /* yeni */
+      --priceRed:#e11d48;      /* kırmızı fiyat */
+      --titleNavy:#0b1d4b;     /* koyu lacivert ürün adı */
+    }
     *{box-sizing:border-box}
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:var(--text)}
     header{padding:12px 10px;background:linear-gradient(90deg,var(--orange),var(--blue));color:#fff}
@@ -34,8 +39,31 @@
     .guide{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
     .guide::after{content:"";width:68%;height:32%;border:3px dashed rgba(255,255,255,.85);border-radius:10px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
     .qtybtn{padding:6px 10px;border:1px solid #d6daf2;background:#fff;border-radius:8px}
-    .pname{font-weight:700;color:#0a7a2b}
-    .pprice{font-weight:700;color:#a14900}
+
+    /* GÜNCEL: ürün adı ve fiyat görünümü */
+    .pname{
+      font-weight:800;
+      color:var(--titleNavy);
+      font-size:18px;
+      letter-spacing:.2px;
+      line-height:1.2;
+      text-transform:uppercase;
+    }
+    .pprice{
+      font-weight:800;
+      color:var(--priceRed);
+      font-size:20px;
+      line-height:1.2;
+    }
+    .productInfoBox{
+      margin:10px 0 4px 0;
+      background:#fff;
+      border:1px solid #e5e7f4;
+      border-radius:12px;
+      padding:10px 12px;
+      box-shadow:0 2px 8px rgba(16,32,80,.06);
+    }
+
     .result{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #dbe1ff;border-radius:10px;background:#fff;margin:6px 0}
     .result small{color:#6b7391}
   </style>
@@ -69,21 +97,26 @@
   <!-- BARKOD / ADET -->
   <div class="card">
     <div class="row">
-      <label>Barkod/Kod:</label>
-      <input id="barcode" inputmode="numeric" pattern="[0-9]*" placeholder="Barkod yaz / tara" style="flex:1;min-width:200px" />
+      <label>Barkod / Kod</label>
+      <input id="barcode" inputmode="numeric" pattern="[0-9]*" placeholder="Barkod yaz / okut" style="flex:1;min-width:200px" />
       <button id="btnClearField">Temizle</button>
       <button id="btnSubmitCode" class="accent">Bilgiyi Göster</button>
-      <label>Adet:</label>
+      <label>Adet</label>
       <input id="qty" type="number" value="1" min="1" style="width:90px" />
       <button id="btnMinus" class="qtybtn">-1</button>
       <button id="btnPlus"  class="qtybtn">+1</button>
       <button id="btnAdd"   class="good">Ekle</button>
       <button id="btnUndo">Geri Al</button>
     </div>
-    <div class="muted">Ürün: <span id="productName" class="pname">—</span> · Fiyat: <span id="productPrice" class="pprice">—</span></div>
+
+    <!-- GÜNCEL: Ürün adı + fiyat, barkod ile adet arasında kutuda -->
+    <div id="productInfoBox" class="productInfoBox">
+      <div id="productName"  class="pname">—</div>
+      <div id="productPrice" class="pprice">—</div>
+    </div>
   </div>
 
-  <!-- LİSTE -->
+  <!-- LİSTE + ARAMA -->
   <div class="card">
     <div class="row">
       <input id="searchName" type="search" placeholder="İsimle ara..." style="flex:1;min-width:260px" />
@@ -108,7 +141,7 @@
     </div>
 
     <div class="row" style="margin-top:10px">
-      <label>Dosya Adı:</label>
+      <label>Dosya Adı</label>
       <input id="filename" placeholder="sayim" style="width:60%" />
       <button id="btnExport" class="primary">TXT Olarak Dışa Aktar</button>
       <button id="btnCSV" class="accent">CSV Olarak Dışa Aktar</button>
