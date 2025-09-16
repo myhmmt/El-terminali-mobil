@@ -1,6 +1,6 @@
 // ====== STATE ======
-const state={items:{},scanning:false,currentDeviceId:null,singleShot:false};
-let mediaStream=null,rafId=null,frames=0,duplicateGuard={code:null,until:0},lastOp=null,detector=null,off=null,octx=null;
+const state={items:{}, order:[], scanning:false, currentDeviceId:null, singleShot:false};
+let mediaStream=null,rafId=null,frames=0,duplicateGuard={code:null,until:0},detector=null,off=null,octx=null;
 let productMap={};
 
 // ====== EL ======
@@ -27,46 +27,88 @@ const sndAccepted = new Audio('accepted.ogg'); sndAccepted.preload = 'auto';
 const sndUnknown  = new Audio('unkown.ogg');  sndUnknown.preload  = 'auto';
 
 // ====== HELPERS ======
+function ensureOrderIntegrity(){
+  // Eski kayıtlardan kalan kodlar order'a yoksa ekle
+  for(const c of Object.keys(state.items)){
+    if(!state.order.includes(c)) state.order.push(c);
+  }
+  // Order'da olup silinmişleri temizleme render sırasında yapılır
+}
 function render(){
-  tbody.innerHTML=''; let sum=0;
-  Object.entries(state.items).forEach(([c,q])=>{
-    sum+=Number(q)||0;
+  ensureOrderIntegrity();
+  tbody.innerHTML='';
+
+  // Sadece mevcut ürünleri, tarama SIRASINA göre gez
+  const codes = state.order.filter(c => state.items[c] != null);
+  let sum=0;
+
+  for(const c of codes){
+    const q = Number(state.items[c])||0; sum+=q;
     const name=(productMap[c]?.name)||'—';
     const tr=document.createElement('tr');
     tr.innerHTML=
-      `<td class="col-act"><button class="btn-del" onclick="del('${c}')">Sil</button></td>
+      `<td class="col-act"><button class="btn-del" onclick="delItem('${c}')">Sil</button></td>
        <td class="col-product">
          <div class="prod">
-           <div class="prod-name">${name}</div>
-           <div class="prod-code">${c}</div>
+           <span class="prod-name">${name}</span>
+           <span class="prod-code">${c}</span>
          </div>
        </td>
        <td class="right col-qty">
          <input type="number" class="qtyInput" min="0" value="${q}" data-code="${c}" style="width:72px;text-align:right">
        </td>`;
     tbody.appendChild(tr);
-  });
-  totalRows.textContent=Object.keys(state.items).length;
+  }
+  totalRows.textContent=codes.length;
   totalQty.textContent=sum;
 }
-window.del=(c)=>{delete state.items[c];save();render();}
-function upsert(c,q){ if(!c) return; const n=Math.max(1,Number(q)||1); state.items[c]=(Number(state.items[c])||0)+n; save(); render(); }
-function save(){ localStorage.setItem('barcodeItems', JSON.stringify(state.items)); }
-function load(){ const raw=localStorage.getItem('barcodeItems'); if(raw){ try{state.items=JSON.parse(raw);}catch{} } render(); }
+window.delItem=(c)=>{
+  delete state.items[c];
+  // order'dan da çıkar
+  const i=state.order.indexOf(c); if(i>-1) state.order.splice(i,1);
+  save(); render();
+};
+function upsert(c,q){
+  if(!c) return;
+  const n=Math.max(1,Number(q)||1);
+  const existed = Object.prototype.hasOwnProperty.call(state.items,c);
+  state.items[c]=(Number(state.items[c])||0)+n;
+  if(!existed) state.order.push(c); // ilk kez eklendiyse SIRAYA al
+  save(); render();
+}
+function save(){
+  localStorage.setItem('barcodeItems', JSON.stringify(state.items));
+  localStorage.setItem('barcodeOrder', JSON.stringify(state.order));
+}
+function load(){
+  const raw=localStorage.getItem('barcodeItems');
+  if(raw){ try{state.items=JSON.parse(raw)||{};}catch{} }
+  const ord=localStorage.getItem('barcodeOrder');
+  if(ord){ try{state.order=JSON.parse(ord)||[];}catch{} }
+  render();
+}
 
 function dl(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
-function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((($('#filename').value)||'sayim')+'.txt', lines.join('\n'), 'text/plain'); }
+function exportTXT(){
+  ensureOrderIntegrity();
+  const codes = state.order.filter(c => state.items[c] != null);
+  const lines = codes.map(c=>`${c};${state.items[c]}`);
+  dl((($('#filename').value)||'sayim')+'.txt', lines.join('\n'), 'text/plain');
+}
 
-// PDF (Fatura görünümü)
+// PDF de okutma sırasına göre
 function parseMoney(str){ if(!str) return 0; const s=String(str).replace(/\./g,'').replace(',','.'); const v=parseFloat(s); return isFinite(v)?v:0; }
 function fmtMoney(n){ return n.toFixed(2).replace('.',','); }
 function exportPDF(){
-  const rows = Object.entries(state.items).map(([code,qty])=>{
+  ensureOrderIntegrity();
+  const codes = state.order.filter(c => state.items[c] != null);
+  const rows = codes.map(code=>{
+    const qty = Number(state.items[code])||0;
     const name = productMap[code]?.name || '';
     const priceStr = productMap[code]?.price || '0,00';
     const price = parseMoney(priceStr);
-    const total = price * (Number(qty)||0);
-    return {code,name,qty:Number(qty)||0,priceStr:fmtMoney(price),totalStr:fmtMoney(total),total};
+    const total = price * qty;
+    return {code,name,qty,priceStr:fmtMoney(price),totalStr:fmtMoney(total),total};
   });
   const grand = rows.reduce((s,r)=>s+r.total,0);
 
@@ -303,7 +345,7 @@ $('#btnAdd').onclick  = ()=>{
 $('#btnClearField').onclick = ()=>{ inpCode.value=''; showProductInfo(''); inpCode.focus(); };
 $('#btnExport').onclick= ()=> exportTXT();
 $('#btnPDF').onclick   = ()=> exportPDF();
-$('#btnClear').onclick = ()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; save(); render(); } };
+$('#btnClear').onclick = ()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; state.order=[]; save(); render(); } };
 
 // Enter akışı: barkod → adet → ekle
 $('#btnSubmitCode').onclick = ()=>{
@@ -327,7 +369,12 @@ tbody.addEventListener('change', (e)=>{
   if(t && t.classList.contains('qtyInput')){
     const code = t.getAttribute('data-code');
     let v = Number(t.value)||0;
-    if(v<=0){ delete state.items[code]; } else { state.items[code]=v; }
+    if(v<=0){
+      delete state.items[code];
+      const i=state.order.indexOf(code); if(i>-1) state.order.splice(i,1);
+    } else {
+      state.items[code]=v;
+    }
     save(); render();
   }
 });
@@ -343,4 +390,4 @@ try{
   const pm = localStorage.getItem('productMap');
   if(pm){ productMap = JSON.parse(pm); mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü'; buildSearchIndex(); }
 }catch{}
-load(); listCameras();
+load(); // items + order yüklenir
