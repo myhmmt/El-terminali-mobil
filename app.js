@@ -34,19 +34,19 @@ function render(){
     const name=(productMap[c]?.name)||'—';
     const tr=document.createElement('tr');
     tr.innerHTML=
-      `<td>${c}</td>
-       <td>${name}</td>
-       <td class="right">
+      `<td class="col-act"><button class="btn-del" onclick="del('${c}')">Sil</button></td>
+       <td>${c}</td>
+       <td class="col-name">${name}</td>
+       <td class="right col-qty">
          <input type="number" class="qtyInput" min="0" value="${q}" data-code="${c}" style="width:72px;text-align:right">
-       </td>
-       <td><button onclick="del('${c}')">Sil</button></td>`;
+       </td>`;
     tbody.appendChild(tr);
   });
   totalRows.textContent=Object.keys(state.items).length;
   totalQty.textContent=sum;
 }
 window.del=(c)=>{delete state.items[c];save();render();}
-function upsert(c,q){ if(!c) return; const n=Math.max(1,Number(q)||1); state.items[c]=(Number(state.items[c])||0)+n; lastOp={code:c,qty:n}; save(); render(); }
+function upsert(c,q){ if(!c) return; const n=Math.max(1,Number(q)||1); state.items[c]=(Number(state.items[c])||0)+n; save(); render(); }
 function save(){ localStorage.setItem('barcodeItems', JSON.stringify(state.items)); }
 function load(){ const raw=localStorage.getItem('barcodeItems'); if(raw){ try{state.items=JSON.parse(raw);}catch{} } render(); }
 
@@ -54,11 +54,7 @@ function dl(name,content,type){ const a=document.createElement('a'); a.href=URL.
 function exportTXT(){ const lines=Object.entries(state.items).map(([c,q])=>`${c};${q}`); dl((($('#filename').value)||'sayim')+'.txt', lines.join('\n'), 'text/plain'); }
 
 // PDF (Fatura görünümü)
-function parseMoney(str){ // "12,34" -> 12.34
-  if(!str) return 0;
-  const s=String(str).replace(/\./g,'').replace(',','.');
-  const v=parseFloat(s); return isFinite(v)?v:0;
-}
+function parseMoney(str){ if(!str) return 0; const s=String(str).replace(/\./g,'').replace(',','.'); const v=parseFloat(s); return isFinite(v)?v:0; }
 function fmtMoney(n){ return n.toFixed(2).replace('.',','); }
 function exportPDF(){
   const rows = Object.entries(state.items).map(([code,qty])=>{
@@ -72,43 +68,41 @@ function exportPDF(){
 
   const title = 'GENÇ GROSS';
   const date = new Date().toLocaleString('tr-TR');
-  const html = `
-<!doctype html><html><head><meta charset="utf-8">
+  const html = `<!doctype html><html><head><meta charset="utf-8">
 <style>
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:24px}
-  h1{margin:0 0 4px 0;font-size:22px}
-  .muted{color:#666;font-size:12px;margin-bottom:12px}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{padding:8px;border-bottom:1px solid #ddd;font-size:14px}
-  th{text-align:left;background:#f5f5f5}
-  td.num{text-align:right}
-  .total{margin-top:12px;display:flex;justify-content:flex-end}
-  .total .box{min-width:260px;border:1px solid #ddd;padding:10px 12px}
-  .right{text-align:right}
-</style>
-</head><body>
-  <h1>${title}</h1>
-  <div class="muted">Tarih: ${date}</div>
-  <table>
-    <thead><tr><th>Barkod</th><th>İsim</th><th class="right">Adet</th><th class="right">Fiyat</th><th class="right">Toplam</th></tr></thead>
-    <tbody>
-      ${rows.map(r=>`<tr>
-        <td>${r.code}</td>
-        <td>${r.name}</td>
-        <td class="num">${r.qty}</td>
-        <td class="num">${r.priceStr}</td>
-        <td class="num">${r.totalStr}</td>
-      </tr>`).join('')}
-    </tbody>
-  </table>
-  <div class="total"><div class="box"><strong>Genel Toplam:</strong> <span style="float:right">${fmtMoney(grand)}</span></div></div>
-  <script>window.onload=()=>window.print()</script>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:24px}
+h1{margin:0 0 4px 0;font-size:22px}
+.muted{color:#666;font-size:12px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{padding:8px;border-bottom:1px solid #ddd;font-size:14px}
+th{text-align:left;background:#f5f5f5}
+td.num{text-align:right}
+.total{margin-top:12px;display:flex;justify-content:flex-end}
+.total .box{min-width:260px;border:1px solid #ddd;padding:10px 12px}
+.right{text-align:right}
+</style></head><body>
+<h1>${title}</h1>
+<div class="muted">Tarih: ${date}</div>
+<table>
+  <thead><tr><th>Barkod</th><th>İsim</th><th class="right">Adet</th><th class="right">Fiyat</th><th class="right">Toplam</th></tr></thead>
+  <tbody>
+    ${rows.map(r=>`<tr>
+      <td>${r.code}</td>
+      <td>${r.name}</td>
+      <td class="num">${r.qty}</td>
+      <td class="num">${r.priceStr}</td>
+      <td class="num">${r.totalStr}</td>
+    </tr>`).join('')}
+  </tbody>
+</table>
+<div class="total"><div class="box"><strong>Genel Toplam:</strong> <span style="float:right">${fmtMoney(grand)}</span></div></div>
+<script>window.onload=()=>window.print()</script>
 </body></html>`;
   const w = window.open('', '_blank');
   w.document.open(); w.document.write(html); w.document.close();
 }
 
-// Türkçe arama normalizasyonu (ı=i, ş=s, ç=c, ğ=g, ö=o, ü=u; büyük/küçük)
+// Türkçe arama normalizasyonu
 function trFold(s){
   if(!s) return '';
   const m = {'ı':'i','İ':'i','I':'i','Ş':'s','ş':'s','Ç':'c','ç':'c','Ğ':'g','ğ':'g','Ö':'o','ö':'o','Ü':'u','ü':'u'};
@@ -122,17 +116,11 @@ function playBeep(a){ play(a); }
 async function start(){
   stop();
   statusEl.textContent='Kamera açılıyor...';
-  const tryGet = async (cons) => {
-    try{ return await navigator.mediaDevices.getUserMedia(cons); }
-    catch(e){ throw e; }
-  };
+  const tryGet = async (cons) => { try{ return await navigator.mediaDevices.getUserMedia(cons); } catch(e){ throw e; } };
   try{
     let stream=null;
-
-    // Yalnızca arka kamera tercihleri
     try{ stream = await tryGet({video:{facingMode:{exact:'environment'}, width:{ideal:1920}, height:{ideal:1080}}, audio:false}); }
     catch(_){ try{ stream = await tryGet({video:{facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}}, audio:false}); }catch(__){} }
-
     if(!stream){ stream = await tryGet({video:true, audio:false}); }
 
     mediaStream = stream;
@@ -150,8 +138,8 @@ async function start(){
     statusEl.textContent=msg;
   }
 }
-async function listCameras(){ /* gizli; yine de izin için çağrılır */ try{ await navigator.mediaDevices.enumerateDevices(); }catch(e){} }
-selCam && (selCam.onchange=()=>{ /* gizli olduğu için kullanılmıyor */ });
+async function listCameras(){ try{ await navigator.mediaDevices.enumerateDevices(); }catch(e){} }
+selCam && (selCam.onchange=()=>{});
 
 function stop(){
   cancelAnimationFrame(rafId); rafId=null; frames=0; fpsEl.textContent='FPS: -';
@@ -181,6 +169,7 @@ function onScanned(code){
 
   inpCode.value = code;
   showProductInfo(code);
+  // 5-6) sesler
   if(productMap[code]) playBeep(beep); else playBeep(errBeep);
   if(navigator.vibrate) navigator.vibrate(30);
 
@@ -202,29 +191,12 @@ function normPriceStr(p){
   if(!p) return '';
   p = String(p).trim();
   if(!p) return '';
-
-  const onlyNums = p.replace(/[^\d.,]/g, '');
-  if(!onlyNums) return '';
-
+  const onlyNums = p.replace(/[^\d.,]/g, ''); if(!onlyNums) return '';
   let decIdx = -1;
-  for(let i=onlyNums.length-1;i>=0;i--){
-    const ch = onlyNums[i];
-    if((ch==='.'||ch===',') && i < onlyNums.length-1){
-      const tail = onlyNums.slice(i+1);
-      if(/^\d{1,2}$/.test(tail)){ decIdx = i; break; }
-    }
-  }
-
-  let intPart, fracPart='';
-  if(decIdx>=0){ intPart = onlyNums.slice(0,decIdx); fracPart = onlyNums.slice(decIdx+1); }
-  else { intPart = onlyNums; }
-
-  intPart = intPart.replace(/[.,]/g, '');
-  let norm = intPart;
-  if(fracPart){ fracPart = (fracPart+'00').slice(0,2); norm += '.'+fracPart; }
-  const v = Number(norm);
-  if(!isFinite(v)) return '';
-  return v.toFixed(2).replace('.',',');
+  for(let i=onlyNums.length-1;i>=0;i--){ const ch = onlyNums[i]; if((ch==='.'||ch===',') && i < onlyNums.length-1){ const tail = onlyNums.slice(i+1); if(/^\d{1,2}$/.test(tail)){ decIdx = i; break; } } }
+  let intPart, fracPart=''; if(decIdx>=0){ intPart = onlyNums.slice(0,decIdx); fracPart = onlyNums.slice(decIdx+1); } else { intPart = onlyNums; }
+  intPart = intPart.replace(/[.,]/g, ''); let norm = intPart; if(fracPart){ fracPart = (fracPart+'00').slice(0,2); norm += '.'+fracPart; }
+  const v = Number(norm); if(!isFinite(v)) return ''; return v.toFixed(2).replace('.',',');
 }
 
 function parseTextToMap(txt){
@@ -234,28 +206,19 @@ function parseTextToMap(txt){
     const raw = raw0.trim();
     const first = raw.indexOf(';'); if(first === -1) continue;
     const second = raw.indexOf(';', first+1); if(second === -1) continue;
-
     const code = raw.slice(0, first).replace(/\s+/g,'');
     const name = raw.slice(first+1, second).trim();
     const tail = raw.slice(second+1).trim();
     if(!code || !name) continue;
-
     let price = normPriceStr(tail);
     if(!price && tail){
       const numish = tail.replace(/[^\d.,]/g,'');
-      if(numish){
-        const guess = (numish.includes('.') && !numish.includes(',')) ? numish.replace('.',',') : numish;
-        price = guess;
-      }else{
-        price = tail;
-      }
+      if(numish){ const guess = (numish.includes('.') && !numish.includes(',')) ? numish.replace('.',',') : numish; price = guess; }
+      else{ price = tail; }
     }
     if(!price){
       const parts = raw.split(';').map(s=>s.trim());
-      for(let i=parts.length-1;i>=2;i--){
-        const p = normPriceStr(parts[i]);
-        if(p){ price = p; break; }
-      }
+      for(let i=parts.length-1;i>=2;i--){ const p = normPriceStr(parts[i]); if(p){ price = p; break; } }
     }
     map[code] = {name, price};
   }
@@ -324,13 +287,13 @@ $('#btnAdd').onclick  = ()=>{
 
   const known = !!productMap[code];
   if(!known){
-    play(sndUnknown); // uyarı görünürken çal
+    play(sndUnknown);
     const ok = confirm('Bu barkod ürün verisinde tanımlı değil. Listeye eklemek istediğinizden emin misiniz?');
     if(!ok) return;
   }
 
   upsert(code, qty);
-  if(known) play(sndAccepted); // tanımlı üründe accepted çal
+  if(known) play(sndAccepted);
   inpCode.value=''; inpQty.value=1; nameEl.textContent='—'; priceEl.textContent='—'; inpCode.focus();
 };
 
@@ -339,6 +302,7 @@ $('#btnExport').onclick= ()=> exportTXT();
 $('#btnPDF').onclick   = ()=> exportPDF();
 $('#btnClear').onclick = ()=>{ if(confirm('Listeyi temizlemek istiyor musun?')){ state.items={}; save(); render(); } };
 
+// Enter akışı: barkod → adet → ekle
 $('#btnSubmitCode').onclick = ()=>{
   const code = inpCode.value.trim();
   if(!code) return;
@@ -346,14 +310,13 @@ $('#btnSubmitCode').onclick = ()=>{
   playBeep(productMap[code] ? beep : errBeep);
   inpQty.focus(); inpQty.select();
 };
-inpCode.addEventListener('input', ()=>{ const c=inpCode.value.trim(); if(c) showProductInfo(c); });
 inpCode.addEventListener('keydown', e=>{
   if(e.key==='Enter'){ e.preventDefault(); $('#btnSubmitCode').click(); }
 });
-inpQty.addEventListener('focus', ()=>{ inpQty.select(); });
 inpQty.addEventListener('keydown', e=>{
   if(e.key==='Enter'){ e.preventDefault(); $('#btnAdd').click(); }
 });
+inpQty.addEventListener('focus', ()=>{ inpQty.select(); });
 
 // Liste adet düzenleme (input üzerinde)
 tbody.addEventListener('change', (e)=>{
@@ -368,7 +331,7 @@ tbody.addEventListener('change', (e)=>{
 tbody.addEventListener('keydown', (e)=>{
   const t = e.target;
   if(t && t.classList.contains('qtyInput') && e.key==='Enter'){
-    t.blur(); // change tetikler
+    t.blur();
   }
 });
 
