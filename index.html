@@ -7,10 +7,7 @@
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#1C2AAE" />
   <style>
-    :root{
-      --blue:#1C2AAE;--orange:#F0552C;--bg:#fff;--card:#f6f8ff;--text:#142043;--muted:#6b7391;--ok:#16a34a;--warn:#ef4444;
-      --priceRed:#e11d48; --titleNavy:#0b1d4b;
-    }
+    :root{--blue:#1C2AAE;--orange:#F0552C;--bg:#fff;--card:#f6f8ff;--text:#142043;--muted:#6b7391;--ok:#16a34a;--warn:#ef4444;--priceRed:#e11d48;--titleNavy:#0b1d4b}
     *{box-sizing:border-box}
     html,body{overflow-x:hidden}
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:var(--text)}
@@ -21,18 +18,14 @@
     .wrap{max-width:980px;margin:auto;padding:12px}
     .card{background:var(--card);padding:12px;border-radius:12px;margin:10px 0;border:1px solid #e5e9ff}
     button{padding:8px 12px;margin:2px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
-    .primary{background:var(--blue);color:#fff}
-    .accent{background:var(--orange);color:#fff}
-    .good{background:var(--ok);color:#fff}
-    .warn{background:var(--warn);color:#fff}
+    .primary{background:var(--blue);color:#fff}.accent{background:var(--orange);color:#fff}.good{background:var(--ok);color:#fff}.warn{background:var(--warn);color:#fff}
     .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
     label{font-size:13px}
     input[type="file"],input[type="text"],input[type="number"],input[type="search"],select{border:1px solid #d6daf2;border-radius:8px;padding:8px}
     table{width:100%;border-collapse:collapse;margin-top:10px;table-layout:fixed}
     th,td{border-bottom:1px solid #dbe1ff;padding:8px;vertical-align:middle}
     th{background:#e9edff;color:#233}
-    .right{text-align:right}
-    .muted{color:var(--muted);font-size:12px}
+    .right{text-align:right}.muted{color:var(--muted);font-size:12px}
     .chip{display:inline-block;background:#e8ecff;color:#334;padding:4px 8px;border-radius:999px;font-size:12px;margin-right:6px;border:1px solid #d6daf2}
 
     /* KAMERA */
@@ -41,7 +34,7 @@
     .guide{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
     .guide::after{content:"";width:72%;height:36%;border:3px dashed rgba(255,255,255,.85);border-radius:12px;box-shadow:0 0 0 200vmax rgba(0,0,0,.35) inset}
 
-    /* Ürün adı ve fiyat (barkod/adet alanı arasında) */
+    /* Ürün bilgi kutusu */
     .pname{font-weight:800;color:var(--titleNavy);font-size:18px;letter-spacing:.2px;line-height:1.2;text-transform:uppercase}
     .pprice{font-weight:800;color:var(--priceRed);font-size:20px;line-height:1.2}
     .productInfoBox{margin:10px 0 4px 0;background:#fff;border:1px solid #e5e7f4;border-radius:12px;padding:10px 12px;box-shadow:0 2px 8px rgba(16,32,80,.06)}
@@ -52,15 +45,12 @@
     /* “Tek Okut” sabit FAB */
     #btnScanOnce{position:fixed;right:16px;bottom:16px;z-index:9999;border-radius:999px;padding:12px 16px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
 
-    /* Kamera seçici gizli */
     #cameraSelect{display:none}
 
     /* Liste */
     th.col-act, td.col-act{width:64px;text-align:left}
     td.col-product{word-break:break-word}
     td.col-qty{width:90px}
-
-    /* Ürün hücresi: üstte isim (küçük), altta barkod (monospace) */
     .prod{display:block}
     .prod-name{display:block;font-weight:700;font-size:14px;line-height:1.15;color:var(--titleNavy);margin:0 0 2px 0}
     .prod-code{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Roboto Mono",monospace;font-size:12px;color:var(--muted);word-break:break-all;letter-spacing:.2px}
@@ -100,11 +90,11 @@
       <button id="btnSubmitCode" class="accent">Bilgiyi Göster</button>
       <label>Adet</label>
       <input id="qty" type="number" value="1" min="1" style="width:110px" />
-      <button id="btnAdd"   class="good">Ekle</button>
+      <button id="btnAdd" class="good">Ekle</button>
     </div>
 
     <div id="productInfoBox" class="productInfoBox">
-      <div id="productName"  class="pname">—</div>
+      <div id="productName" class="pname">—</div>
       <div id="productPrice" class="pprice">—</div>
     </div>
   </div>
@@ -148,8 +138,8 @@
     </div>
   </div>
 
-  <audio id="beep"  src="beep.ogg"  preload="auto"></audio>
-  <audio id="err"   src="error.ogg" preload="auto"></audio>
+  <audio id="beep" src="beep.ogg" preload="auto"></audio>
+  <audio id="err"  src="error.ogg" preload="auto"></audio>
 </div>
 
 <!-- Sabit “Tek Okut” -->
