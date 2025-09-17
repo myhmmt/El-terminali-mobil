@@ -209,16 +209,29 @@ function stop(){
 async function listCameras(){ try{ await navigator.mediaDevices.enumerateDevices(); }catch(e){} }
 
 // --- Hızlı algılama: her kare ROI, her 6. kare tam çerçeve ---
+// !!! UPC-A/UPC-E kapalı: yalnıza EAN-13, EAN-8, Code128, Code39, ITF
 async function runNativeLoop(){
   if(!('BarcodeDetector' in window)){ statusEl.textContent='Desteklenmiyor'; return; }
-  if(!detector){ detector=new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','itf','upc_e','upc_a']}); }
+  if(!detector){
+    detector = new BarcodeDetector({
+      formats: ['ean_13','ean_8','code_128','code_39','itf'] // UPC kapalı
+    });
+  }
   if(!off){ off=document.createElement('canvas'); octx=off.getContext('2d',{willReadFrequently:true}); octx.imageSmoothingEnabled=false; }
 
   const tryDetect = async (src)=>{
     try{
       const d = await detector.detect(src);
       if(d && d.length){
-        const raw = (d[0].rawValue||'').trim();
+        // Birden çok dönerse, EAN-13'ü tercih et
+        const pick = d.sort((a,b)=>{
+          const fa=(a.format||''), fb=(b.format||'');
+          if(fa===fb) return (b.rawValue?.length||0)-(a.rawValue?.length||0);
+          if(fa==='ean_13') return -1;
+          if(fb==='ean_13') return 1;
+          return 0;
+        })[0];
+        const raw = (pick.rawValue||'').trim();
         if(raw){ onScanned(raw); return true; }
       }
     }catch(_){}
@@ -231,14 +244,14 @@ async function runNativeLoop(){
 
     const vw=video.videoWidth, vh=video.videoHeight;
     if(vw && vh){
-      // Orta ROI (geniş %80 × yükseklik %42) — CSS’deki kılavuzla aynı hissiyat
+      // Orta ROI (geniş %80 × yükseklik %42)
       const rw=Math.floor(vw*0.80), rh=Math.floor(vh*0.42);
       const rx=Math.floor((vw-rw)/2), ry=Math.floor((vh-rh)/2);
       off.width=rw; off.height=rh;
       octx.drawImage(video,rx,ry,rw,rh,0,0,rw,rh);
       let ok = await tryDetect(off);
 
-      // Her 6. karede tam çerçeve fallback (≈100ms @60fps)
+      // Her 6. karede tam çerçeve fallback
       if(!ok && frameIx===0){
         ok = await tryDetect(video);
       }
