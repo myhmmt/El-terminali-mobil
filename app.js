@@ -22,23 +22,20 @@ const beep     = $('#beep');
 const errBeep  = $('#err');
 const btnOnce  = $('#btnScanOnce');
 
-// Ek sesler
+// Ek sesler (mevcut dosyalar)
 const sndAccepted = new Audio('accepted.ogg'); sndAccepted.preload = 'auto';
 const sndUnknown  = new Audio('unkown.ogg');  sndUnknown.preload  = 'auto';
 
 // ====== HELPERS ======
 function ensureOrderIntegrity(){
-  // Eski kayıtlardan kalan kodlar order'a yoksa ekle
   for(const c of Object.keys(state.items)){
     if(!state.order.includes(c)) state.order.push(c);
   }
-  // Order'da olup silinmişleri temizleme render sırasında yapılır
 }
 function render(){
   ensureOrderIntegrity();
   tbody.innerHTML='';
 
-  // Sadece mevcut ürünleri, tarama SIRASINA göre gez
   const codes = state.order.filter(c => state.items[c] != null);
   let sum=0;
 
@@ -64,7 +61,6 @@ function render(){
 }
 window.delItem=(c)=>{
   delete state.items[c];
-  // order'dan da çıkar
   const i=state.order.indexOf(c); if(i>-1) state.order.splice(i,1);
   save(); render();
 };
@@ -73,7 +69,7 @@ function upsert(c,q){
   const n=Math.max(1,Number(q)||1);
   const existed = Object.prototype.hasOwnProperty.call(state.items,c);
   state.items[c]=(Number(state.items[c])||0)+n;
-  if(!existed) state.order.push(c); // ilk kez eklendiyse SIRAYA al
+  if(!existed) state.order.push(c);
   save(); render();
 }
 function save(){
@@ -96,7 +92,7 @@ function exportTXT(){
   dl((($('#filename').value)||'sayim')+'.txt', lines.join('\n'), 'text/plain');
 }
 
-// PDF de okutma sırasına göre
+// PDF (okutma sırasına göre)
 function parseMoney(str){ if(!str) return 0; const s=String(str).replace(/\./g,'').replace(',','.'); const v=parseFloat(s); return isFinite(v)?v:0; }
 function fmtMoney(n){ return n.toFixed(2).replace('.',','); }
 function exportPDF(){
@@ -127,7 +123,7 @@ td.num{text-align:right}
 .total .box{min-width:260px;border:1px solid #ddd;padding:10px 12px}
 .right{text-align:right}
 </style></head><body>
-<h1>${title}</h1>
+<h1>${title} <span style="font-size:12px;color:#666;">v1.0</span></h1>
 <div class="muted">Tarih: ${date}</div>
 <table>
   <thead><tr><th>Barkod</th><th>İsim</th><th class="right">Adet</th><th class="right">Fiyat</th><th class="right">Toplam</th></tr></thead>
@@ -215,10 +211,15 @@ function onScanned(code){
 
   inpCode.value = code;
   showProductInfo(code);
+
+  // 1) okutunca adet kısmını fokusla (klavye aç)
+  setTimeout(()=>{ inpQty.focus(); inpQty.select(); }, 0);
+
   if(productMap[code]) playBeep(beep); else playBeep(errBeep);
   if(navigator.vibrate) navigator.vibrate(30);
 
-  if(state.singleShot){ stop(); btnOnce.disabled=true; btnOnce.textContent='Okundu ✓'; setTimeout(()=>{btnOnce.disabled=false;btnOnce.textContent='👉 Tek Okut';},900); state.singleShot=false; }
+  // Tek-okut modunda okuma sonrası otomatik durur (mevcut davranış)
+  if(state.singleShot){ stop(); btnOnce.textContent='👉 Tek Okut'; state.singleShot=false; }
 }
 function fpsCounter(){ let last=performance.now(); const tick=()=>{ if(!state.scanning) return; const now=performance.now(); if(now-last>=1000){ fpsEl.textContent='FPS: '+frames; frames=0; last=now; } requestAnimationFrame(tick); }; tick(); }
 
@@ -323,7 +324,20 @@ $('#searchName').addEventListener('input', ()=>{
 // ====== UI OLAYLARI ======
 $('#btnStart').onclick = async()=>{ await listCameras(); start(); };
 $('#btnStop').onclick  = ()=> stop();
-btnOnce.onclick        = async()=>{ state.singleShot=true; btnOnce.disabled=true; btnOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); else statusEl.textContent='Tek seferlik okuma aktif'; };
+
+// 3) Tek Okut: kamera açıksa kapat; değilse tek seferlik başlat
+btnOnce.onclick = async ()=>{
+  if(state.scanning){
+    stop();
+    btnOnce.textContent='👉 Tek Okut';
+    state.singleShot=false;
+    return;
+  }
+  state.singleShot=true;
+  btnOnce.textContent='Okutuluyor...';
+  if(!state.scanning) await start();
+  statusEl.textContent='Tek seferlik okuma aktif';
+};
 
 $('#btnAdd').onclick  = ()=>{
   const code = inpCode.value.trim();
@@ -339,7 +353,12 @@ $('#btnAdd').onclick  = ()=>{
 
   upsert(code, qty);
   if(known) play(sndAccepted);
-  inpCode.value=''; inpQty.value=1; nameEl.textContent='—'; priceEl.textContent='—'; inpCode.focus();
+
+  // 2) ürünü ekleyince klavye kapansın
+  inpQty.blur(); inpCode.blur(); if(document.activeElement) document.activeElement.blur();
+
+  inpCode.value=''; inpQty.value=1; nameEl.textContent='—'; priceEl.textContent='—';
+  inpCode.focus(); // bir sonraki barkoda hazır ol (klavyeyi tekrar açmaz)
 };
 
 $('#btnClearField').onclick = ()=>{ inpCode.value=''; showProductInfo(''); inpCode.focus(); };
@@ -353,7 +372,8 @@ $('#btnSubmitCode').onclick = ()=>{
   if(!code) return;
   showProductInfo(code);
   playBeep(productMap[code] ? beep : errBeep);
-  inpQty.focus(); inpQty.select();
+  // 1) bilgiyi gösterince de adet fokus/klavye aç
+  setTimeout(()=>{ inpQty.focus(); inpQty.select(); }, 0);
 };
 inpCode.addEventListener('keydown', e=>{
   if(e.key==='Enter'){ e.preventDefault(); $('#btnSubmitCode').click(); }
@@ -390,4 +410,5 @@ try{
   const pm = localStorage.getItem('productMap');
   if(pm){ productMap = JSON.parse(pm); mapStat.textContent = Object.keys(productMap).length + ' ürün yüklü'; buildSearchIndex(); }
 }catch{}
-load(); // items + order yüklenir
+load();
+listCameras();
