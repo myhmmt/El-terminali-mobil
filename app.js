@@ -1,8 +1,10 @@
 // ====== AYAR ======
-/**
- * GitHub RAW ürün dosyası URL'in sabit: Bilgi.txt
- */
-const REMOTE_PRODUCT_URL = "https://raw.githubusercontent.com/myhmmt/El-terminali-mobil/main/Bilgi.txt";
+// Sırayla denenecek uzak kaynaklar: RAW → jsDelivr → (opsiyonel) GitHub Pages
+const REMOTE_PRODUCT_URLS = [
+  "https://raw.githubusercontent.com/myhmmt/El-terminali-mobil/main/Bilgi.txt",
+  "https://cdn.jsdelivr.net/gh/myhmmt/El-terminali-mobil@main/Bilgi.txt",
+  // "https://myhmmt.github.io/El-terminali-mobil/Bilgi.txt", // varsa aç
+];
 
 // ====== STATE ======
 const state = { items:{}, order:[], scanning:false, currentDeviceId:null, singleShot:false };
@@ -12,7 +14,6 @@ let productMap={};
 
 // ====== ELEMENTS ======
 const $        = sel => document.querySelector(sel);
-const selCam   = $('#cameraSelect');
 const video    = $('#video');
 const statusEl = $('#scanStatus');
 const fpsEl    = $('#fps');
@@ -73,7 +74,10 @@ function upsert(c,q){
   if(!existed) state.order.push(c);
   save(); render();
 }
-function save(){ localStorage.setItem('barcodeItems',JSON.stringify(state.items)); localStorage.setItem('barcodeOrder',JSON.stringify(state.order)); }
+function save(){
+  localStorage.setItem('barcodeItems',JSON.stringify(state.items));
+  localStorage.setItem('barcodeOrder',JSON.stringify(state.order));
+}
 function load(){
   const raw=localStorage.getItem('barcodeItems'); if(raw){ try{state.items=JSON.parse(raw)||{};}catch{} }
   const ord=localStorage.getItem('barcodeOrder'); if(ord){ try{state.order=JSON.parse(ord)||[];}catch{} }
@@ -81,8 +85,18 @@ function load(){
 }
 
 // ====== DIŞA AKTAR ======
-function dl(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
-function exportTXT(){ ensureOrderIntegrity(); const codes=state.order.filter(c=>state.items[c]!=null); const lines=codes.map(c=>`${c};${state.items[c]}`); dl((($('#filename').value)||'sayim')+'.txt', lines.join('\n'),'text/plain'); }
+function dl(name,content,type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=name; a.click();
+  URL.revokeObjectURL(a.href);
+}
+function exportTXT(){
+  ensureOrderIntegrity();
+  const codes=state.order.filter(c=>state.items[c]!=null);
+  const lines=codes.map(c=>`${c};${state.items[c]}`);
+  dl((($('#filename').value)||'sayim')+'.txt', lines.join('\n'),'text/plain');
+}
 function parseMoney(str){ if(!str) return 0; const s=String(str).replace(/\./g,'').replace(',','.'); const v=parseFloat(s); return isFinite(v)?v:0; }
 function fmtMoney(n){ return n.toFixed(2).replace('.',','); }
 function exportPDF(){
@@ -114,11 +128,19 @@ function exportPDF(){
 }
 
 // ====== ARAMA (TR normalizasyon) ======
-function trFold(s){ if(!s) return ''; const m={'ı':'i','İ':'i','I':'i','Ş':'s','ş':'s','Ç':'c','ç':'c','Ğ':'g','ğ':'g','Ö':'o','ö':'o','Ü':'u','ü':'u'}; return s.split('').map(ch=>m[ch]??ch).join('').toLocaleLowerCase('tr-TR'); }
+function trFold(s){
+  if(!s) return '';
+  const m={'ı':'i','İ':'i','I':'i','Ş':'s','ş':'s','Ç':'c','ç':'c','Ğ':'g','ğ':'g','Ö':'o','ö':'o','Ü':'u','ü':'u'};
+  return s.split('').map(ch=>m[ch]??ch).join('').toLocaleLowerCase('tr-TR');
+}
 let searchArr=[];
-function buildSearchIndex(){ searchArr=Object.entries(productMap).map(([code,obj])=>({code,name:obj.name,price:obj.price,fold:trFold(obj.name||'')})); }
+function buildSearchIndex(){
+  searchArr=Object.entries(productMap)
+    .map(([code,obj])=>({code,name:obj.name,price:obj.price,fold:trFold(obj.name||'')}));
+}
 $('#searchName').addEventListener('input', ()=>{
-  const q=trFold(($('#searchName').value||'').trim()); const list=$('#searchList'); list.innerHTML=''; if(!q) return;
+  const q=trFold(($('#searchName').value||'').trim()); const list=$('#searchList');
+  list.innerHTML=''; if(!q) return;
   const matches=searchArr.filter(x=>x.fold.includes(q)).slice(0,50);
   for(const m of matches){
     const row=document.createElement('div'); row.className='result';
@@ -136,57 +158,25 @@ function playBeep(a){ play(a); }
 async function start(){
   stop();
   statusEl.textContent='Kamera açılıyor...';
-
-  const tryGet = async (cons) => {
-    try{ return await navigator.mediaDevices.getUserMedia(cons); }
-    catch(e){ throw e; }
-  };
-
+  const tryGet = async (cons) => { try{ return await navigator.mediaDevices.getUserMedia(cons); } catch(e){ throw e; } };
   try{
     let stream=null;
-
-    // 1) 720p @ 60fps, arka kamera (maks. performans hedefi)
     try{
-      stream = await tryGet({
-        video:{
-          facingMode:{ exact:'environment' },
-          width:{ ideal:1280 }, height:{ ideal:720 },
-          frameRate:{ ideal:60, max:90 }
-        },
-        audio:false
-      });
+      stream = await tryGet({ video:{ facingMode:{ exact:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 }, frameRate:{ ideal:60, max:90 } }, audio:false });
     }catch(_){
-      // 2) Esnek arka kamera 720p@60
       try{
-        stream = await tryGet({
-          video:{
-            facingMode:{ ideal:'environment' },
-            width:{ ideal:1280 }, height:{ ideal:720 },
-            frameRate:{ ideal:60, max:90 }
-          }, audio:false
-        });
+        stream = await tryGet({ video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 }, frameRate:{ ideal:60, max:90 } }, audio:false });
       }catch(__){
-        // 3) 1080p @ 30fps fallback
         try{
-          stream = await tryGet({
-            video:{
-              facingMode:{ ideal:'environment' },
-              width:{ ideal:1920 }, height:{ ideal:1080 },
-              frameRate:{ ideal:30, max:60 }
-            }, audio:false
-          });
+          stream = await tryGet({ video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1920 }, height:{ ideal:1080 }, frameRate:{ ideal:30, max:60 } }, audio:false });
         }catch(___){
-          // 4) Generic
           stream = await tryGet({ video:true, audio:false });
         }
       }
     }
-
     mediaStream = stream;
     video.srcObject = mediaStream;
     await video.play();
-
-    // Otomatik odak/pozlama (destek varsa)
     try{
       const track = mediaStream.getVideoTracks?.()[0];
       if(track?.getCapabilities && track.applyConstraints){
@@ -197,7 +187,6 @@ async function start(){
         if(adv.length) await track.applyConstraints({ advanced: adv });
       }
     }catch{}
-
     state.scanning=true;
     statusEl.textContent='Tarama aktif';
     runNativeLoop();
@@ -210,23 +199,18 @@ async function start(){
     statusEl.textContent=msg;
   }
 }
-
 function stop(){
   cancelAnimationFrame(rafId); rafId=null; frames=0; fpsEl.textContent='FPS: -';
   const s=video.srcObject; if(s?.getTracks) s.getTracks().forEach(t=>t.stop());
   video.srcObject=null; mediaStream=null; state.scanning=false; statusEl.textContent='Durduruldu';
 }
-
 async function listCameras(){ try{ await navigator.mediaDevices.enumerateDevices(); }catch(e){} }
 
-// --- Algılama döngüsü (her kare ROI, her 6. kare tam çerçeve) ---
-// !!! UPC-A/UPC-E kapalı: yalnızca EAN-13, EAN-8, Code128, Code39, ITF
+// --- Algılama döngüsü ---
 async function runNativeLoop(){
   if(!('BarcodeDetector' in window)){ statusEl.textContent='Desteklenmiyor'; return; }
   if(!detector){
-    detector = new BarcodeDetector({
-      formats: ['ean_13','ean_8','code_128','code_39','itf']
-    });
+    detector = new BarcodeDetector({ formats: ['ean_13','ean_8','code_128','code_39','itf'] }); // UPC kapalı
   }
   if(!off){ off=document.createElement('canvas'); octx=off.getContext('2d',{willReadFrequently:true}); octx.imageSmoothingEnabled=false; }
 
@@ -234,7 +218,6 @@ async function runNativeLoop(){
     try{
       const d = await detector.detect(src);
       if(d && d.length){
-        // Tercih: EAN-13 > diğerleri; sonra en uzun rawValue
         const pick = d.sort((a,b)=>{
           const fa=(a.format||''), fb=(b.format||'');
           if(fa===fb) return (b.rawValue?.length||0)-(a.rawValue?.length||0);
@@ -255,19 +238,13 @@ async function runNativeLoop(){
 
     const vw=video.videoWidth, vh=video.videoHeight;
     if(vw && vh){
-      // Orta ROI (geniş %80 × yükseklik %42)
       const rw=Math.floor(vw*0.80), rh=Math.floor(vh*0.42);
       const rx=Math.floor((vw-rw)/2), ry=Math.floor((vh-rh)/2);
       off.width=rw; off.height=rh;
       octx.drawImage(video,rx,ry,rw,rh,0,0,rw,rh);
       let ok = await tryDetect(off);
-
-      // Her 6. karede tam çerçeve fallback
-      if(!ok && frameIx===0){
-        ok = await tryDetect(video);
-      }
+      if(!ok && frameIx===0){ ok = await tryDetect(video); }
     }
-
     if(state.scanning) rafId=requestAnimationFrame(loop);
   };
   loop();
@@ -282,18 +259,17 @@ function onScanned(code){
   inpCode.value = code;
   showProductInfo(code);
 
-  // okutunca adet alanını aç
   setTimeout(()=>{ inpQty.focus(); inpQty.select(); }, 0);
-
-  // Ses (ürün var/yok)
   playBeep(productMap[code] ? beep : errBeep);
   if(navigator.vibrate) navigator.vibrate(30);
 
-  // Tek Okut modunda otomatik durdur
   if(state.singleShot){ stop(); btnOnce.textContent='👉 Tek Okut'; state.singleShot=false; }
 }
-
-function fpsCounter(){ let last=performance.now(); const tick=()=>{ if(!state.scanning) return; const now=performance.now(); if(now-last>=1000){ fpsEl.textContent='FPS: '+frames; frames=0; last=now; } requestAnimationFrame(tick); }; tick(); }
+function fpsCounter(){
+  let last=performance.now();
+  const tick=()=>{ if(!state.scanning) return; const now=performance.now(); if(now-last>=1000){ fpsEl.textContent='FPS: '+frames; frames=0; last=now; } requestAnimationFrame(tick); };
+  tick();
+}
 
 // ====== ÜRÜN BİLGİ ======
 function showProductInfo(code){
@@ -350,38 +326,50 @@ function parseTextToMap(txt){
   return map;
 }
 
-// ====== UZAKTAN VERİ: ÇEK / SENKRON ======
-function setRemoteStatus(ok, msg){
+// ====== UZAKTAN VERİ ======
+function setRemoteStatus(okOrTxt, txt){
   if(!remoteStat) return;
-  remoteStat.textContent = ok ? (`Uzaktan veri: ✓ ${msg||'alındı'}`) : (`Uzaktan veri: ✗ ${msg||'alınamadı'}`);
+  if(typeof okOrTxt === 'string'){ remoteStat.textContent = 'Uzaktan veri: ' + okOrTxt; return; }
+  remoteStat.textContent = okOrTxt ? ('Uzaktan veri: ✓ ' + (txt||'alındı'))
+                                   : ('Uzaktan veri: ✗ ' + (txt||'alınamadı'));
 }
 function setLastSync(ts){
   if(!lastSyncLbl) return;
-  if(!ts){ lastSyncLbl.textContent = '—'; return; }
-  try{
-    const d = new Date(ts);
-    lastSyncLbl.textContent = d.toLocaleString('tr-TR');
-  }catch{ lastSyncLbl.textContent = '—'; }
+  lastSyncLbl.textContent = ts ? new Date(ts).toLocaleString('tr-TR') : '—';
 }
-
+async function fetchWithFallback(url) {
+  const full = url + (url.includes('?') ? '&' : '?') + 'v=' + Date.now();
+  const res = await fetch(full, { cache:'no-store', mode:'cors', headers:{'cache-control':'no-cache'} });
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  return res.text();
+}
 async function fetchRemoteProducts(){
-  if(!REMOTE_PRODUCT_URL) { setRemoteStatus(false,'URL yok'); return false; }
   try{
-    const res = await fetch(REMOTE_PRODUCT_URL + (REMOTE_PRODUCT_URL.includes('?')?'&':'?') + 'v=' + Date.now(), { cache:'no-store' });
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    let txt = await res.text();
-    if(txt && txt.charCodeAt(0)===0xFEFF) txt = txt.slice(1); // BOM
+    setRemoteStatus('yükleniyor…');
+    let txt=null, lastErr=null, usedUrl=null;
 
-    let newMap={};
+    for(const u of REMOTE_PRODUCT_URLS){
+      try{
+        usedUrl = u;
+        txt = await fetchWithFallback(u);
+        break;
+      }catch(e){ lastErr = e; }
+    }
+    if(txt==null){
+      setRemoteStatus(false, (lastErr?.message||'alınamadı'));
+      return false;
+    }
+
+    if(txt && txt.charCodeAt(0)===0xFEFF) txt = txt.slice(1);
+
+    let newMap = {};
     if(txt.trim().startsWith('{')){
-      // JSON biçimi
       const obj = JSON.parse(txt);
       for(const [k,v] of Object.entries(obj)){
         if(typeof v==='string') newMap[k]={name:v,price:''};
         else newMap[k]={name:v.name||'',price:v.price||''};
       }
     }else{
-      // Satır bazlı TXT/CSV
       newMap = parseTextToMap(txt);
     }
 
@@ -390,18 +378,19 @@ async function fetchRemoteProducts(){
     const count = Object.keys(productMap).length;
     if(mapStat) mapStat.textContent = count + ' ürün yüklü';
 
-    buildSearchIndex();
-    showProductInfo(inpCode.value.trim());
-
     const nowIso = new Date().toISOString();
     localStorage.setItem('productMapSyncedAt', nowIso);
     setLastSync(nowIso);
-    setRemoteStatus(true, 'alındı');
+    setRemoteStatus(true, `alındı (${count})`);
+    console.log('Uzak veri kaynağı:', usedUrl);
 
+    buildSearchIndex();
+    showProductInfo(inpCode.value.trim());
     return true;
+
   }catch(err){
     console.error('Remote fetch failed:', err);
-    setRemoteStatus(false, 'alınamadı');
+    setRemoteStatus(false, err?.message || 'alınamadı');
     return false;
   }
 }
@@ -414,7 +403,6 @@ $('#btnClearMap').onclick = ()=>{
   showProductInfo('');
   $('#searchList').innerHTML='';
 };
-
 inpFile.onchange = async(e)=>{
   const f=e.target.files?.[0]; if(!f) return;
   let txt=''; try{ txt=await f.text(); }catch{ alert('Dosya okunamadı.'); return; }
@@ -442,15 +430,13 @@ inpFile.onchange = async(e)=>{
 $('#btnStart').onclick = async()=>{ await listCameras(); start(); };
 $('#btnStop').onclick  = ()=> stop();
 
-// “Uzaktan Yenile”
 if(btnRemote){
   btnRemote.onclick = async ()=>{
-    setRemoteStatus(false,'yenileniyor…');
+    setRemoteStatus('yenileniyor…');
     await fetchRemoteProducts();
   };
 }
 
-// Tek Okut
 btnOnce.onclick = async ()=>{
   if(state.scanning){ stop(); btnOnce.textContent='👉 Tek Okut'; state.singleShot=false; return; }
   state.singleShot=true; btnOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); statusEl.textContent='Tek seferlik okuma aktif';
@@ -471,7 +457,7 @@ $('#btnAdd').onclick  = ()=>{
   upsert(code, qty);
   if(known) play(sndAccepted);
 
-  // KLAVYEYİ KAPAT
+  // Klavyeyi kapat
   inpQty.blur(); inpCode.blur(); if(document.activeElement?.blur) document.activeElement.blur();
   btnOnce.focus({preventScroll:true});
 
@@ -489,7 +475,7 @@ $('#btnSubmitCode').onclick = ()=>{
   const code=inpCode.value.trim(); if(!code) return;
   showProductInfo(code);
   playBeep(productMap[code] ? beep : errBeep);
-  setTimeout(()=>{ inpQty.focus(); inpQty.select(); }, 0);
+  setTimeout(()=>{ inpQty.focus(); inpQty.select(); }, 0); // adet klavyesini aç
 };
 inpCode.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); $('#btnSubmitCode').click(); } });
 inpQty.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); $('#btnAdd').click(); } });
@@ -502,14 +488,9 @@ try{
   const last = localStorage.getItem('productMapSyncedAt');
   setLastSync(last);
 }catch{}
-load(); listCameras();
+load();
 
-// Açılışta otomatik uzaktan çekme
+// Uygulama yüklenince otomatik uzak veri dene
 (async()=>{
-  if(REMOTE_PRODUCT_URL){
-    setRemoteStatus(false,'yükleniyor…');
-    await fetchRemoteProducts();
-  }else{
-    setRemoteStatus(false,'kapalı');
-  }
+  if(REMOTE_PRODUCT_URLS?.length){ await fetchRemoteProducts(); }
 })();
