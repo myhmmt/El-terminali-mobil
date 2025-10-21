@@ -1,31 +1,31 @@
-const CACHE = "ggmt-v2";
-const ASSETS = [
-  "./","./index.html","./app.js","./manifest.json",
-  "./icon-192.png","./icon-512.png",
-  "./beep.ogg","./error.ogg","./accepted.ogg","./unkown.ogg"
+const CACHE_NAME = "ggmt-v2.1";
+const FILES_TO_CACHE = [
+  "./",
+  "./index.html",
+  "./app.js?v=2.1",
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./beep.ogg",
+  "./error.ogg"
 ];
 
-self.addEventListener("install", e=>{
+self.addEventListener("install", e => {
   e.waitUntil(
-    caches.open(CACHE)
-      .then(c=>c.addAll(ASSETS))
-      .then(()=>self.skipWaiting())
+    caches.open(CACHE_NAME).then(c => c.addAll(FILES_TO_CACHE))
   );
 });
 
-self.addEventListener("activate", e=>{
-  e.waitUntil(self.clients.claim());
+self.addEventListener("activate", e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    )
+  );
 });
 
-self.addEventListener("fetch", e=>{
-  const req = e.request;
+self.addEventListener("fetch", e => {
   e.respondWith(
-    caches.match(req).then(cached=>{
-      const fetchPromise = fetch(req).then(res=>{
-        caches.open(CACHE).then(c=>c.put(req, res.clone()));
-        return res;
-      }).catch(()=> cached || Promise.reject("offline"));
-      return cached || fetchPromise;
-    })
+    caches.match(e.request).then(r => r || fetch(e.request))
   );
 });
