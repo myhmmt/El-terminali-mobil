@@ -1,10 +1,12 @@
 {
-  "name": "GENÇ GROSS • Mobil Terminal v2",
-  "short_name": "Mobil Terminal",
-  "start_url": ".",
+  "name": "GENÇ GROSS · Mobil Terminal",
+  "short_name": "GG Terminal",
+  "version": "2.1",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1C2AAE",
+  "orientation": "portrait",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
