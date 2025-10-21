@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GENÇ GROSS • Mobil Terminal v1.0</title>
+  <title>GENÇ GROSS • Mobil Terminal v2</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#1C2AAE" />
   <style>
@@ -60,7 +60,7 @@
 <body>
 <header>
   <div class="wrap">
-    <div class="ttl">📦 GENÇ GROSS • Mobil Terminal <span class="ver">v1.0</span></div>
+    <div class="ttl">📦 GENÇ GROSS • Mobil Terminal <span class="ver">v2</span></div>
   </div>
 </header>
 
@@ -129,10 +129,11 @@
       <button id="btnClearMap" class="warn">Temizle</button>
     </div>
 
-    <!-- Uzaktan veri -->
     <div class="row" style="margin-top:10px">
       <button id="btnRemote" class="primary">Uzaktan Yenile</button>
-      <span class="chip" id="remoteStatus">Uzaktan veri: —</span>
+      <span id="remoteStatus" class="chip">Uzaktan veri: —</span>
+    </div>
+    <div class="row">
       <span class="chip">Son güncelleme: <span id="lastSync">—</span></span>
     </div>
 
@@ -152,7 +153,8 @@
 <!-- Sabit “Tek Okut” -->
 <button id="btnScanOnce" class="accent">👉 Tek Okut</button>
 
-<script src="app.js"></script>
+<!-- cache-bust için v parametresi -->
+<script src="app.js?v=2"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(()=>{});
