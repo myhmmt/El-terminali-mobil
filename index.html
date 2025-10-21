@@ -3,13 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GENÇ GROSS • Mobil Terminal v2</title>
-  <link rel="manifest" href="manifest.json" />
+  <title>GENÇ GROSS • Mobil Terminal v2.1</title>
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1C2AAE" />
   <style>
     :root{--blue:#1C2AAE;--orange:#F0552C;--bg:#fff;--card:#f6f8ff;--text:#142043;--muted:#6b7391;--ok:#16a34a;--warn:#ef4444;--priceRed:#e11d48;--titleNavy:#0b1d4b}
-    *{box-sizing:border-box}
-    html,body{overflow-x:hidden}
+    *{box-sizing:border-box} html,body{overflow-x:hidden}
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:var(--text)}
     header{padding:12px 10px;background:linear-gradient(90deg,var(--orange),var(--blue));color:#fff}
     header .wrap{max-width:980px;margin:auto;display:flex;justify-content:center;align-items:center}
@@ -42,10 +41,8 @@
     .result{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #dbe1ff;border-radius:10px;background:#fff;margin:6px 0}
     .result small{color:#6b7391}
 
-    /* “Tek Okut” sabit FAB */
+    /* FAB Tek Okut */
     #btnScanOnce{position:fixed;right:16px;bottom:16px;z-index:9999;border-radius:999px;padding:12px 16px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
-
-    #cameraSelect{display:none}
 
     /* Liste */
     th.col-act, td.col-act{width:64px;text-align:left}
@@ -60,7 +57,7 @@
 <body>
 <header>
   <div class="wrap">
-    <div class="ttl">📦 GENÇ GROSS • Mobil Terminal <span class="ver">v2</span></div>
+    <div class="ttl">📦 GENÇ GROSS • Mobil Terminal <span class="ver">v2.1</span></div>
   </div>
 </header>
 
@@ -73,7 +70,6 @@
       <button id="btnStop">Durdur</button>
       <span class="chip" id="scanStatus">Hazır</span>
       <span class="chip" id="fps">FPS: -</span>
-      <select id="cameraSelect"></select>
     </div>
     <div class="videoBox">
       <video id="video" playsinline autoplay muted></video>
@@ -123,6 +119,7 @@
   <div class="card">
     <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle</h3>
     <div class="muted">TXT/CSV (ör. <code>kod;isim;…;fiyat</code>). Yüklendikten sonra veri cihazda saklanır.</div>
+
     <div class="row">
       <input id="productFile" type="file" accept=".txt,.csv,.json" />
       <span id="mapStat" class="chip">0 ürün yüklü</span>
@@ -146,6 +143,7 @@
     </div>
   </div>
 
+  <!-- Sesler -->
   <audio id="beep" src="beep.ogg" preload="auto"></audio>
   <audio id="err"  src="error.ogg" preload="auto"></audio>
 </div>
@@ -153,11 +151,10 @@
 <!-- Sabit “Tek Okut” -->
 <button id="btnScanOnce" class="accent">👉 Tek Okut</button>
 
-<!-- cache-bust için v parametresi -->
-<script src="app.js?v=2"></script>
+<script src="app.js?v=2.1"></script>
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+    navigator.serviceWorker.register('sw.js?v=2.1').catch(()=>{});
   }
 </script>
 </body>
