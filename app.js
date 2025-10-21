@@ -1,3 +1,9 @@
+// ====== AYAR ======
+/**
+ * GitHub RAW ürün dosyası URL'in sabit: Bilgi.txt
+ */
+const REMOTE_PRODUCT_URL = "https://raw.githubusercontent.com/myhmmt/El-terminali-mobil/main/Bilgi.txt";
+
 // ====== STATE ======
 const state = { items:{}, order:[], scanning:false, currentDeviceId:null, singleShot:false };
 let mediaStream=null, rafId=null, frames=0, frameIx=0, duplicateGuard={code:null,until:0},
@@ -23,7 +29,12 @@ const beep     = $('#beep');
 const errBeep  = $('#err');
 const btnOnce  = $('#btnScanOnce');
 
-// Ek sesler (mevcut dosyalar)
+// Uzaktan veri UI
+const btnRemote   = $('#btnRemote');
+const remoteStat  = $('#remoteStatus');
+const lastSyncLbl = $('#lastSync');
+
+// Ek sesler
 const sndAccepted = new Audio('accepted.ogg'); sndAccepted.preload = 'auto';
 const sndUnknown  = new Audio('unkown.ogg');  sndUnknown.preload  = 'auto';
 
@@ -134,7 +145,7 @@ async function start(){
   try{
     let stream=null;
 
-    // 1) Maks performans: 720p @ 60fps, arka kamera
+    // 1) 720p @ 60fps, arka kamera (maks. performans hedefi)
     try{
       stream = await tryGet({
         video:{
@@ -208,13 +219,13 @@ function stop(){
 
 async function listCameras(){ try{ await navigator.mediaDevices.enumerateDevices(); }catch(e){} }
 
-// --- Hızlı algılama: her kare ROI, her 6. kare tam çerçeve ---
-// !!! UPC-A/UPC-E kapalı: yalnıza EAN-13, EAN-8, Code128, Code39, ITF
+// --- Algılama döngüsü (her kare ROI, her 6. kare tam çerçeve) ---
+// !!! UPC-A/UPC-E kapalı: yalnızca EAN-13, EAN-8, Code128, Code39, ITF
 async function runNativeLoop(){
   if(!('BarcodeDetector' in window)){ statusEl.textContent='Desteklenmiyor'; return; }
   if(!detector){
     detector = new BarcodeDetector({
-      formats: ['ean_13','ean_8','code_128','code_39','itf'] // UPC kapalı
+      formats: ['ean_13','ean_8','code_128','code_39','itf']
     });
   }
   if(!off){ off=document.createElement('canvas'); octx=off.getContext('2d',{willReadFrequently:true}); octx.imageSmoothingEnabled=false; }
@@ -223,7 +234,7 @@ async function runNativeLoop(){
     try{
       const d = await detector.detect(src);
       if(d && d.length){
-        // Birden çok dönerse, EAN-13'ü tercih et
+        // Tercih: EAN-13 > diğerleri; sonra en uzun rawValue
         const pick = d.sort((a,b)=>{
           const fa=(a.format||''), fb=(b.format||'');
           if(fa===fb) return (b.rawValue?.length||0)-(a.rawValue?.length||0);
@@ -266,12 +277,12 @@ function onScanned(code){
   if(!code) return;
   const now=performance.now();
   if(code===duplicateGuard.code && now<duplicateGuard.until) return;
-  duplicateGuard={code,until:now+1500}; // tekrar koruması ~1.5s
+  duplicateGuard={code,until:now+1500};
 
   inpCode.value = code;
   showProductInfo(code);
 
-  // okutunca adet alanını aç (klavye açılır)
+  // okutunca adet alanını aç
   setTimeout(()=>{ inpQty.focus(); inpQty.select(); }, 0);
 
   // Ses (ürün var/yok)
@@ -339,8 +350,71 @@ function parseTextToMap(txt){
   return map;
 }
 
-// ====== VERİ YÜKLE ======
-$('#btnClearMap').onclick = ()=>{ productMap={}; localStorage.removeItem('productMap'); mapStat.textContent='0 ürün yüklü'; showProductInfo(''); $('#searchList').innerHTML=''; };
+// ====== UZAKTAN VERİ: ÇEK / SENKRON ======
+function setRemoteStatus(ok, msg){
+  if(!remoteStat) return;
+  remoteStat.textContent = ok ? (`Uzaktan veri: ✓ ${msg||'alındı'}`) : (`Uzaktan veri: ✗ ${msg||'alınamadı'}`);
+}
+function setLastSync(ts){
+  if(!lastSyncLbl) return;
+  if(!ts){ lastSyncLbl.textContent = '—'; return; }
+  try{
+    const d = new Date(ts);
+    lastSyncLbl.textContent = d.toLocaleString('tr-TR');
+  }catch{ lastSyncLbl.textContent = '—'; }
+}
+
+async function fetchRemoteProducts(){
+  if(!REMOTE_PRODUCT_URL) { setRemoteStatus(false,'URL yok'); return false; }
+  try{
+    const res = await fetch(REMOTE_PRODUCT_URL + (REMOTE_PRODUCT_URL.includes('?')?'&':'?') + 'v=' + Date.now(), { cache:'no-store' });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    let txt = await res.text();
+    if(txt && txt.charCodeAt(0)===0xFEFF) txt = txt.slice(1); // BOM
+
+    let newMap={};
+    if(txt.trim().startsWith('{')){
+      // JSON biçimi
+      const obj = JSON.parse(txt);
+      for(const [k,v] of Object.entries(obj)){
+        if(typeof v==='string') newMap[k]={name:v,price:''};
+        else newMap[k]={name:v.name||'',price:v.price||''};
+      }
+    }else{
+      // Satır bazlı TXT/CSV
+      newMap = parseTextToMap(txt);
+    }
+
+    productMap = newMap;
+    localStorage.setItem('productMap', JSON.stringify(productMap));
+    const count = Object.keys(productMap).length;
+    if(mapStat) mapStat.textContent = count + ' ürün yüklü';
+
+    buildSearchIndex();
+    showProductInfo(inpCode.value.trim());
+
+    const nowIso = new Date().toISOString();
+    localStorage.setItem('productMapSyncedAt', nowIso);
+    setLastSync(nowIso);
+    setRemoteStatus(true, 'alındı');
+
+    return true;
+  }catch(err){
+    console.error('Remote fetch failed:', err);
+    setRemoteStatus(false, 'alınamadı');
+    return false;
+  }
+}
+
+// ====== VERİ YÜKLE (ELLE) ======
+$('#btnClearMap').onclick = ()=>{
+  productMap={};
+  localStorage.removeItem('productMap');
+  mapStat.textContent='0 ürün yüklü';
+  showProductInfo('');
+  $('#searchList').innerHTML='';
+};
+
 inpFile.onchange = async(e)=>{
   const f=e.target.files?.[0]; if(!f) return;
   let txt=''; try{ txt=await f.text(); }catch{ alert('Dosya okunamadı.'); return; }
@@ -368,7 +442,15 @@ inpFile.onchange = async(e)=>{
 $('#btnStart').onclick = async()=>{ await listCameras(); start(); };
 $('#btnStop').onclick  = ()=> stop();
 
-// Tek Okut: açıkken kapat; kapalıyken tek seferlik başlat
+// “Uzaktan Yenile”
+if(btnRemote){
+  btnRemote.onclick = async ()=>{
+    setRemoteStatus(false,'yenileniyor…');
+    await fetchRemoteProducts();
+  };
+}
+
+// Tek Okut
 btnOnce.onclick = async ()=>{
   if(state.scanning){ stop(); btnOnce.textContent='👉 Tek Okut'; state.singleShot=false; return; }
   state.singleShot=true; btnOnce.textContent='Okutuluyor...'; if(!state.scanning) await start(); statusEl.textContent='Tek seferlik okuma aktif';
@@ -389,11 +471,11 @@ $('#btnAdd').onclick  = ()=>{
   upsert(code, qty);
   if(known) play(sndAccepted);
 
-  // KLAVYEYİ KAPAT: blur + odağı butona taşı (keyboard kapanır)
+  // KLAVYEYİ KAPAT
   inpQty.blur(); inpCode.blur(); if(document.activeElement?.blur) document.activeElement.blur();
   btnOnce.focus({preventScroll:true});
 
-  // alanları sıfırla (odak geri verilmez)
+  // Alanları sıfırla
   inpCode.value=''; inpQty.value=1; nameEl.textContent='—'; priceEl.textContent='—';
 };
 
@@ -407,12 +489,27 @@ $('#btnSubmitCode').onclick = ()=>{
   const code=inpCode.value.trim(); if(!code) return;
   showProductInfo(code);
   playBeep(productMap[code] ? beep : errBeep);
-  setTimeout(()=>{ inpQty.focus(); inpQty.select(); }, 0); // adet klavyesini aç
+  setTimeout(()=>{ inpQty.focus(); inpQty.select(); }, 0);
 };
 inpCode.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); $('#btnSubmitCode').click(); } });
 inpQty.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); $('#btnAdd').click(); } });
 inpQty.addEventListener('focus', ()=>{ inpQty.select(); });
 
 // ====== BOOT ======
-try{ const pm=localStorage.getItem('productMap'); if(pm){ productMap=JSON.parse(pm); mapStat.textContent=Object.keys(productMap).length+' ürün yüklü'; buildSearchIndex(); } }catch{}
+try{
+  const pm=localStorage.getItem('productMap');
+  if(pm){ productMap=JSON.parse(pm); mapStat.textContent=Object.keys(productMap).length+' ürün yüklü'; buildSearchIndex(); }
+  const last = localStorage.getItem('productMapSyncedAt');
+  setLastSync(last);
+}catch{}
 load(); listCameras();
+
+// Açılışta otomatik uzaktan çekme
+(async()=>{
+  if(REMOTE_PRODUCT_URL){
+    setRemoteStatus(false,'yükleniyor…');
+    await fetchRemoteProducts();
+  }else{
+    setRemoteStatus(false,'kapalı');
+  }
+})();
