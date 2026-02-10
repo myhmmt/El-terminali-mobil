@@ -1,4 +1,4 @@
-const CACHE_NAME = "ggmt-v2.1";
+const CACHE_NAME = "ggmt-v2.2";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
