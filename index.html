@@ -57,12 +57,13 @@
 <body>
 <header>
   <div class="wrap">
-    <div class="ttl">📦 GENÇ GROSS • Mobil Terminal <span class="ver">v2.2</span></div>
+    <div class="ttl">📦 GENÇ GROSS • Mobil Terminal <span class="ver">v2.1</span></div>
   </div>
 </header>
 
 <div class="wrap">
 
+  <!-- KAMERA -->
   <div class="card">
     <div class="row">
       <button id="btnStart" class="primary">Kamerayı Başlat</button>
@@ -76,6 +77,7 @@
     </div>
   </div>
 
+  <!-- BARKOD / ADET -->
   <div class="card">
     <div class="row">
       <label>Barkod / Kod</label>
@@ -93,6 +95,7 @@
     </div>
   </div>
 
+  <!-- LİSTE + ARAMA -->
   <div class="card">
     <div class="row">
       <input id="searchName" type="search" placeholder="İsimle ara..." style="flex:1;min-width:260px" />
@@ -112,6 +115,7 @@
     Toplam satır: <span id="totalRows">0</span> · Toplam adet: <span id="totalQty">0</span>
   </div>
 
+  <!-- ÜRÜN VERİSİ -->
   <div class="card">
     <h3 style="margin:4px 0 8px 0">Ürün Verisi Yükle</h3>
     <div class="muted">TXT/CSV (ör. <code>kod;isim;…;fiyat</code>). Yüklendikten sonra veri cihazda saklanır.</div>
@@ -139,16 +143,18 @@
     </div>
   </div>
 
+  <!-- Sesler -->
   <audio id="beep" src="beep.ogg" preload="auto"></audio>
   <audio id="err"  src="error.ogg" preload="auto"></audio>
 </div>
 
+<!-- Sabit “Tek Okut” -->
 <button id="btnScanOnce" class="accent">👉 Tek Okut</button>
 
 <script src="app.js?v=2.1"></script>
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=2.2').catch(()=>{});
+    navigator.serviceWorker.register('sw.js?v=2.1').catch(()=>{});
   }
 </script>
 </body>
