@@ -2,7 +2,7 @@ const CACHE_NAME = "ggmt-v2.2";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
-  "./app.js?v=2.1",
+  "./app.js?v=2.2",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
