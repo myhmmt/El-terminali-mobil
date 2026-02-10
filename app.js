@@ -1,6 +1,6 @@
 /* =======================
    GENÇ GROSS • Mobil Terminal
-   app.js — v2.1 (iOS & Android Optimized)
+   app.js — v2.1
    ======================= */
 
 // --------- AYAR ---------
@@ -159,16 +159,11 @@ function play(a){ try{ a.currentTime=0; a.play(); }catch{} }
 function playBeep(a){ play(a); }
 
 /* =======================
-   KAMERA (iOS & Android Uyumlu)
+   KAMERA
    ======================= */
 async function start(){
   stop();
   statusEl.textContent='Kamera açılıyor...';
-
-  // iOS Safari için video özniteliklerini JS ile de garantileyelim
-  video.setAttribute("playsinline", "true");
-  video.setAttribute("muted", "true");
-
   const tryGet = async (cons)=>{ try{ return await navigator.mediaDevices.getUserMedia(cons); }catch(e){ throw e; } };
   try{
     let stream=null;
@@ -187,8 +182,6 @@ async function start(){
     }
     mediaStream = stream;
     video.srcObject = mediaStream;
-
-    // iOS Safari'de play() bir Promise döner ve kesinlikle beklenmelidir.
     await video.play();
 
     try{
@@ -213,21 +206,17 @@ async function start(){
     statusEl.textContent=msg;
   }
 }
-
 function stop(){
   cancelAnimationFrame(rafId); rafId=null; frames=0; fpsEl.textContent='FPS: -';
   const s=video.srcObject; if(s?.getTracks) s.getTracks().forEach(t=>t.stop());
   video.srcObject=null; mediaStream=null; state.scanning=false; statusEl.textContent='Durduruldu';
 }
-
 async function listCameras(){ try{ await navigator.mediaDevices.enumerateDevices(); }catch(e){} }
 
 async function runNativeLoop(){
-  // iOS 17+ Safari BarcodeDetector desteği sunar, ancak video hazır olmalıdır.
   if(!('BarcodeDetector' in window)){ statusEl.textContent='Desteklenmiyor'; return; }
-  
   if(!detector){
-    detector = new BarcodeDetector({ formats: ['ean_13','ean_8','code_128','code_39','itf'] });
+    detector = new BarcodeDetector({ formats: ['ean_13','ean_8','code_128','code_39','itf'] }); // UPC kapalı
   }
   if(!off){ off=document.createElement('canvas'); octx=off.getContext('2d',{willReadFrequently:true}); octx.imageSmoothingEnabled=false; }
 
@@ -253,25 +242,19 @@ async function runNativeLoop(){
     if(!state.scanning) return;
     frames++; frameIx = (frameIx+1) % 6;
 
-    // iOS için KRİTİK: Video karesinin hazır olduğundan emin ol
-    if(video.readyState === video.HAVE_ENOUGH_DATA){
-      const vw=video.videoWidth, vh=video.videoHeight;
-      if(vw && vh){
-        const rw=Math.floor(vw*0.80), rh=Math.floor(vh*0.42);
-        const rx=Math.floor((vw-rw)/2), ry=Math.floor((vh-rh)/2);
-        off.width=rw; off.height=rh;
-        octx.drawImage(video,rx,ry,rw,rh,0,0,rw,rh);
-        
-        let ok = await tryDetect(off);
-        if(!ok && frameIx===0){ ok = await tryDetect(video); }
-      }
+    const vw=video.videoWidth, vh=video.videoHeight;
+    if(vw && vh){
+      const rw=Math.floor(vw*0.80), rh=Math.floor(vh*0.42);
+      const rx=Math.floor((vw-rw)/2), ry=Math.floor((vh-rh)/2);
+      off.width=rw; off.height=rh;
+      octx.drawImage(video,rx,ry,rw,rh,0,0,rw,rh);
+      let ok = await tryDetect(off);
+      if(!ok && frameIx===0){ ok = await tryDetect(video); }
     }
-    
     if(state.scanning) rafId = requestAnimationFrame(loop);
   };
   loop();
 }
-
 function onScanned(code){
   if(!code) return;
   const now = performance.now();
@@ -283,7 +266,6 @@ function onScanned(code){
   playBeep(productMap[code] ? beep : errBeep);
   if(state.singleShot){ stop(); btnOnce.textContent='👉 Tek Okut'; state.singleShot=false; }
 }
-
 function fpsCounter(){ let last=performance.now(); const tick=()=>{ if(!state.scanning) return; const now=performance.now(); if(now-last>=1000){ fpsEl.textContent='FPS: '+frames; frames=0; last=now; } requestAnimationFrame(tick); }; tick(); }
 
 /* =======================
